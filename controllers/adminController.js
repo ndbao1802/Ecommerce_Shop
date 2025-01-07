@@ -2,6 +2,7 @@ const User = require('../models/userModel');
 const Product = require('../models/productModel');
 const Order = require('../models/orderModel');
 const passport = require('passport');
+const Role = require('../models/roleModel');
 
 exports.getLogin = (req, res) => {
     res.render('admin/login', { layout: 'layouts/adminLayout' });
@@ -84,5 +85,48 @@ exports.getOrders = async (req, res) => {
     } catch (error) {
         req.flash('error_msg', 'Error loading orders');
         res.redirect('/admin/dashboard');
+    }
+};
+
+exports.getCreateUser = async (req, res) => {
+    try {
+        const roles = await Role.find();
+        res.render('admin/users/create', {
+            layout: 'layouts/adminLayout',
+            roles
+        });
+    } catch (error) {
+        req.flash('error_msg', 'Error loading roles');
+        res.redirect('/admin/users');
+    }
+};
+
+exports.postCreateUser = async (req, res) => {
+    try {
+        const { name, email, password, phone, roles } = req.body;
+
+        // Validation
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            req.flash('error_msg', 'Email already registered');
+            return res.redirect('/admin/users/create');
+        }
+
+        // Create new user with roles
+        const user = new User({
+            name,
+            email,
+            password,
+            phone,
+            roles: roles // Array of role IDs
+        });
+
+        await user.save();
+        req.flash('success_msg', 'User created successfully');
+        res.redirect('/admin/users');
+    } catch (error) {
+        console.error('Error creating user:', error);
+        req.flash('error_msg', 'Error creating user');
+        res.redirect('/admin/users/create');
     }
 }; 

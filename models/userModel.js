@@ -19,11 +19,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    role: {
-        type: String,
-        enum: ['user', 'admin'],
-        default: 'user'
-    },
+    roles: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Role'
+    }],
     addresses: [{
         street: String,
         ward: String,
@@ -63,6 +62,11 @@ userSchema.pre('save', async function(next) {
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Check if user has specific role
+userSchema.methods.hasRole = function(roleName) {
+    return this.roles.some(role => role.name === roleName);
 };
 
 module.exports = mongoose.model('User', userSchema); 

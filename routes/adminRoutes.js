@@ -14,4 +14,8 @@ router.get('/products', ensureAdmin, adminController.getProducts);
 router.get('/users', ensureAdmin, adminController.getUsers);
 router.get('/orders', ensureAdmin, adminController.getOrders);
 
+// User management routes
+router.get('/users/create', ensureAdmin, adminController.getCreateUser);
+router.post('/users/create', ensureAdmin, adminController.postCreateUser);
+
 module.exports = router; 
