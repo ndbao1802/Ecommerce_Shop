@@ -9,10 +9,29 @@ exports.getLogin = (req, res) => {
 };
 
 exports.postLogin = (req, res, next) => {
-    passport.authenticate('local', {
-        successRedirect: '/admin/dashboard',
-        failureRedirect: '/admin/login',
-        failureFlash: true
+    passport.authenticate('local', async (err, user, info) => {
+        try {
+            if (err) { return next(err); }
+            
+            if (!user) {
+                req.flash('error_msg', info.message);
+                return res.redirect('/admin/login');
+            }
+
+            // Check if user has admin role
+            const hasAdminRole = user.roles.some(role => role.name === 'admin');
+            if (!hasAdminRole) {
+                req.flash('error_msg', 'Access denied. Admin privileges required.');
+                return res.redirect('/admin/login');
+            }
+
+            req.logIn(user, function(err) {
+                if (err) { return next(err); }
+                return res.redirect('/admin/dashboard');
+            });
+        } catch (error) {
+            return next(error);
+        }
     })(req, res, next);
 };
 

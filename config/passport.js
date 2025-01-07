@@ -5,7 +5,7 @@ module.exports = (passport) => {
     passport.use(
         new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
             try {
-                const user = await User.findOne({ email });
+                const user = await User.findOne({ email }).populate('roles');
                 
                 if (!user) {
                     return done(null, false, { message: 'Email is not registered' });
@@ -29,7 +29,7 @@ module.exports = (passport) => {
 
     passport.deserializeUser(async (id, done) => {
         try {
-            const user = await User.findById(id);
+            const user = await User.findById(id).populate('roles');
             done(null, user);
         } catch (error) {
             done(error);
