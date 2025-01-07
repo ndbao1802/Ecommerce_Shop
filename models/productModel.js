@@ -6,6 +6,11 @@ const productSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
+    slug: {
+        type: String,
+        unique: true,
+        lowercase: true
+    },
     description: {
         type: String,
         required: true
@@ -13,6 +18,10 @@ const productSchema = new mongoose.Schema({
     price: {
         type: Number,
         required: true,
+        min: 0
+    },
+    originalPrice: {
+        type: Number,
         min: 0
     },
     category: {
@@ -23,11 +32,16 @@ const productSchema = new mongoose.Schema({
     stock: {
         type: Number,
         required: true,
-        min: 0
+        min: 0,
+        default: 0
     },
     images: [{
         type: String,
         required: true
+    }],
+    specifications: [{
+        name: String,
+        value: String
     }],
     ratings: [{
         user: {
@@ -48,7 +62,23 @@ const productSchema = new mongoose.Schema({
     averageRating: {
         type: Number,
         default: 0
+    },
+    discount: {
+        type: Number,
+        min: 0,
+        max: 100,
+        default: 0
+    },
+    isActive: {
+        type: Boolean,
+        default: true
     }
 }, { timestamps: true });
+
+// Create slug before saving
+productSchema.pre('save', function(next) {
+    this.slug = this.name.toLowerCase().replace(/ /g, '-');
+    next();
+});
 
 module.exports = mongoose.model('Product', productSchema); 
