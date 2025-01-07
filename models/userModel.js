@@ -15,31 +15,37 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    phone: {
+        type: String,
+        required: true
+    },
     role: {
         type: String,
         enum: ['user', 'admin'],
         default: 'user'
     },
-    address: [{
+    addresses: [{
         street: String,
+        ward: String,
+        district: String,
         city: String,
-        state: String,
-        country: String,
-        zipCode: String,
         isDefault: {
             type: Boolean,
             default: false
         }
     }],
+    avatar: {
+        type: String,
+        default: 'default-avatar.jpg'
+    },
     cart: [{
         product: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Product'
         },
-        quantity: {
-            type: Number,
-            default: 1
-        }
+        quantity: Number,
+        selectedSize: String,
+        selectedColor: String
     }],
     wishlist: [{
         type: mongoose.Schema.Types.ObjectId,

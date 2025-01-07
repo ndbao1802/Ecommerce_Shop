@@ -8,40 +8,47 @@ const productSchema = new mongoose.Schema({
     },
     slug: {
         type: String,
-        unique: true,
-        lowercase: true
+        unique: true
     },
     description: {
         type: String,
         required: true
     },
+    details: {
+        brand: String,
+        material: String,
+        origin: String,
+        warranty: String
+    },
     price: {
         type: Number,
-        required: true,
-        min: 0
+        required: true
     },
     originalPrice: {
+        type: Number
+    },
+    discount: {
         type: Number,
-        min: 0
+        default: 0
     },
     category: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Category',
         required: true
     },
-    stock: {
-        type: Number,
-        required: true,
-        min: 0,
-        default: 0
+    subCategory: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'SubCategory'
     },
+    variants: [{
+        color: String,
+        size: String,
+        stock: Number,
+        sku: String
+    }],
     images: [{
         type: String,
         required: true
-    }],
-    specifications: [{
-        name: String,
-        value: String
     }],
     ratings: [{
         user: {
@@ -54,6 +61,7 @@ const productSchema = new mongoose.Schema({
             max: 5
         },
         review: String,
+        images: [String],
         date: {
             type: Date,
             default: Date.now
@@ -63,16 +71,15 @@ const productSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    discount: {
+    totalSold: {
         type: Number,
-        min: 0,
-        max: 100,
         default: 0
     },
     isActive: {
         type: Boolean,
         default: true
-    }
+    },
+    tags: [String]
 }, { timestamps: true });
 
 // Create slug before saving

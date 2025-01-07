@@ -4,21 +4,21 @@ const categorySchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
-        unique: true,
-        trim: true
+        unique: true
     },
     slug: {
         type: String,
-        unique: true,
-        lowercase: true
+        unique: true
     },
-    description: {
-        type: String,
-        required: true
-    },
-    image: {
-        type: String,
-        default: 'default-category.jpg'
+    description: String,
+    image: String,
+    subCategories: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'SubCategory'
+    }],
+    isActive: {
+        type: Boolean,
+        default: true
     }
 }, { timestamps: true });
 

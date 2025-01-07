@@ -9,45 +9,43 @@ const orderSchema = new mongoose.Schema({
     items: [{
         product: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Product',
-            required: true
+            ref: 'Product'
         },
-        quantity: {
-            type: Number,
-            required: true,
-            min: 1
-        },
-        price: {
-            type: Number,
-            required: true
-        }
+        quantity: Number,
+        price: Number,
+        selectedSize: String,
+        selectedColor: String
     }],
-    totalAmount: {
-        type: Number,
-        required: true
-    },
     shippingAddress: {
         street: String,
+        ward: String,
+        district: String,
         city: String,
-        state: String,
-        country: String,
-        zipCode: String
+        phone: String
     },
-    status: {
+    paymentMethod: {
+        type: String,
+        enum: ['COD', 'Banking', 'Momo', 'ZaloPay'],
+        required: true
+    },
+    paymentStatus: {
+        type: String,
+        enum: ['pending', 'paid', 'failed'],
+        default: 'pending'
+    },
+    orderStatus: {
         type: String,
         enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
         default: 'pending'
     },
-    paymentMethod: {
-        type: String,
-        required: true,
-        enum: ['credit_card', 'debit_card', 'paypal']
-    },
-    paymentStatus: {
-        type: String,
-        enum: ['pending', 'completed', 'failed'],
-        default: 'pending'
-    }
+    totalAmount: Number,
+    shippingFee: Number,
+    discount: Number,
+    finalAmount: Number,
+    note: String,
+    trackingNumber: String,
+    cancelReason: String,
+    estimatedDeliveryDate: Date
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', orderSchema); 
