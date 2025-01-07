@@ -10,6 +10,7 @@ require('dotenv').config();
 const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
 const homeController = require('./controllers/homeController');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 
@@ -65,6 +66,7 @@ app.set('layout', 'layouts/main');
 app.get('/', homeController.getHome);
 app.use('/users', userRoutes);
 app.use('/products', productRoutes);
+app.use('/admin', adminRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
