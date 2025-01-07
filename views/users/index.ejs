@@ -1,0 +1,10 @@
+<h1>Users List</h1>
+<a href="/users/create">Create New User</a>
+
+<ul>
+    <% users.forEach(user => { %>
+        <li>
+            <%= user.name %> - <%= user.email %>
+        </li>
+    <% }); %>
+</ul> 
