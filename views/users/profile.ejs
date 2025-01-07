@@ -1,0 +1,41 @@
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <img src="<%= user.avatar %>" alt="Profile" class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                    <h5 class="card-title"><%= user.name %></h5>
+                    <p class="text-muted"><%= user.email %></p>
+                    <p class="text-muted"><%= user.phone %></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">My Addresses</h5>
+                </div>
+                <div class="card-body">
+                    <% if (user.addresses && user.addresses.length > 0) { %>
+                        <% user.addresses.forEach(address => { %>
+                            <div class="mb-3 p-3 border rounded">
+                                <p class="mb-1"><strong>Street:</strong> <%= address.street %></p>
+                                <p class="mb-1"><strong>Ward:</strong> <%= address.ward %></p>
+                                <p class="mb-1"><strong>District:</strong> <%= address.district %></p>
+                                <p class="mb-1"><strong>City:</strong> <%= address.city %></p>
+                                <% if (address.isDefault) { %>
+                                    <span class="badge bg-primary">Default</span>
+                                <% } %>
+                            </div>
+                        <% }); %>
+                    <% } else { %>
+                        <p>No addresses added yet.</p>
+                    <% } %>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAddressModal">
+                        Add New Address
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 
