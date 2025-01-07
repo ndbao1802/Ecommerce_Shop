@@ -1,0 +1,43 @@
+<div class="container-fluid">
+    <h2 class="mb-4">Orders</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Total Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% orders.forEach(order => { %>
+                            <tr>
+                                <td><%= order._id %></td>
+                                <td><%= order.user.name %></td>
+                                <td>$<%= order.totalAmount %></td>
+                                <td>
+                                    <span class="badge bg-<%= order.status === 'delivered' ? 'success' : 
+                                        order.status === 'cancelled' ? 'danger' : 'warning' %>">
+                                        <%= order.status %>
+                                    </span>
+                                </td>
+                                <td><%= order.createdAt.toLocaleDateString() %></td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary">
+                                        <i class="bi bi-eye"></i> View
+                                    </button>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div> 

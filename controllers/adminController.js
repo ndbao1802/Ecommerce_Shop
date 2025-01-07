@@ -69,7 +69,7 @@ exports.getDashboard = async (req, res) => {
 exports.getProducts = async (req, res) => {
     try {
         const products = await Product.find().populate('category');
-        res.render('admin/products', {
+        res.render('admin/products/index', {
             layout: 'layouts/adminLayout',
             products
         });
@@ -81,7 +81,7 @@ exports.getProducts = async (req, res) => {
 
 exports.getUsers = async (req, res) => {
     try {
-        const users = await User.find().select('-password');
+        const users = await User.find().populate('roles').select('-password');
         res.render('admin/users', {
             layout: 'layouts/adminLayout',
             users
@@ -147,5 +147,27 @@ exports.postCreateUser = async (req, res) => {
         console.error('Error creating user:', error);
         req.flash('error_msg', 'Error creating user');
         res.redirect('/admin/users/create');
+    }
+};
+
+exports.getSettings = async (req, res) => {
+    try {
+        res.render('admin/settings', {
+            layout: 'layouts/adminLayout'
+        });
+    } catch (error) {
+        req.flash('error_msg', 'Error loading settings');
+        res.redirect('/admin/dashboard');
+    }
+};
+
+exports.updateSettings = async (req, res) => {
+    try {
+        // Handle settings update logic here
+        req.flash('success_msg', 'Settings updated successfully');
+        res.redirect('/admin/settings');
+    } catch (error) {
+        req.flash('error_msg', 'Error updating settings');
+        res.redirect('/admin/settings');
     }
 }; 
