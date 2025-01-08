@@ -1,5 +1,7 @@
 const Category = require('../../models/categoryModel');
 const Product = require('../../models/productModel');
+const { cloudinary } = require('../../config/cloudinary');
+const { upload } = require('../../middleware/upload');
 
 exports.getCategories = async (req, res) => {
     try {
@@ -16,16 +18,26 @@ exports.getCategories = async (req, res) => {
 
 exports.createCategory = async (req, res) => {
     try {
-        const { name, description, displayOrder } = req.body;
+        const { name, description, isActive } = req.body;
+        
+        let imageUrl = '';
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path);
+            imageUrl = result.secure_url;
+        }
+
         const category = new Category({
             name,
             description,
-            displayOrder: displayOrder || 0
+            image: imageUrl,
+            isActive: isActive === 'on' || isActive === true
         });
+
         await category.save();
         req.flash('success_msg', 'Category created successfully');
         res.redirect('/admin/categories');
     } catch (error) {
+        console.error('Error creating category:', error);
         req.flash('error_msg', 'Error creating category');
         res.redirect('/admin/categories');
     }

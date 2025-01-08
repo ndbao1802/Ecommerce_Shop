@@ -61,14 +61,14 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.set('layout', 'layouts/main');
 
+// Add method-override middleware before routes
+app.use(methodOverride('_method'));
+
 // Routes
 app.get('/', homeController.getHome);
 app.use('/users', userRoutes);
 app.use('/products', productRoutes);
 app.use('/admin', adminRoutes);
-
-// Add this after express middleware setup
-app.use(methodOverride('_method'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
