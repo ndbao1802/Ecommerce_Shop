@@ -1,4 +1,5 @@
 const Category = require('../../models/categoryModel');
+const Product = require('../../models/productModel');
 
 exports.getCategories = async (req, res) => {
     try {
@@ -60,7 +61,13 @@ exports.deleteCategory = async (req, res) => {
 
 exports.getProductCategories = async (req, res) => {
     try {
-        const categories = await Category.find();
+        const categories = await Category.find().lean();
+        
+        // Get product count for each category
+        for (let category of categories) {
+            category.productsCount = await Product.countDocuments({ category: category._id });
+        }
+
         res.render('admin/categories/products', {
             layout: 'layouts/adminLayout',
             categories

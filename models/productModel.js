@@ -79,7 +79,15 @@ const productSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
-    tags: [String]
+    tags: [String],
+    isFeatured: {
+        type: Boolean,
+        default: false
+    },
+    displayOrder: {
+        type: Number,
+        default: 0
+    }
 }, { timestamps: true });
 
 // Create slug before saving

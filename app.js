@@ -5,6 +5,7 @@ const expressLayouts = require('express-ejs-layouts');
 const session = require('express-session');
 const flash = require('connect-flash');
 const passport = require('passport');
+const methodOverride = require('method-override');
 require('dotenv').config();
 
 const userRoutes = require('./routes/userRoutes');
@@ -65,6 +66,9 @@ app.get('/', homeController.getHome);
 app.use('/users', userRoutes);
 app.use('/products', productRoutes);
 app.use('/admin', adminRoutes);
+
+// Add this after express middleware setup
+app.use(methodOverride('_method'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

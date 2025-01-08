@@ -4,6 +4,7 @@ const adminController = require('../controllers/adminController');
 const categoryController = require('../controllers/admin/categoryController');
 const productController = require('../controllers/admin/productController');
 const { ensureAdmin } = require('../middleware/adminAuth');
+const homePageController = require('../controllers/admin/homePageController');
 
 // Admin auth routes
 router.get('/login', adminController.getLogin);
@@ -41,5 +42,9 @@ router.get('/orders', ensureAdmin, adminController.getOrders);
 // System Settings
 router.get('/settings', ensureAdmin, adminController.getSettings);
 router.post('/settings', ensureAdmin, adminController.updateSettings);
+
+// Home Page Settings
+router.get('/homepage/settings', ensureAdmin, homePageController.getHomePageSettings);
+router.post('/homepage/featured-products', ensureAdmin, homePageController.updateFeaturedProducts);
 
 module.exports = router; 

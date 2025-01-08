@@ -35,7 +35,6 @@ exports.postRegister = async (req, res) => {
             return res.redirect('/users/register');
         }
 
-        // Check if user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             req.flash('error_msg', 'Email is already registered');
@@ -46,7 +45,7 @@ exports.postRegister = async (req, res) => {
         const newUser = new User({
             name,
             email,
-            password, // Will be hashed by the pre-save middleware
+            password, 
             phone,
             addresses: [],
             cart: [],
@@ -71,7 +70,6 @@ exports.logout = (req, res, next) => {
     });
 };
 
-// Protected route example
 exports.getProfile = async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('-password');

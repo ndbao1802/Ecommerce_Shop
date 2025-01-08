@@ -7,19 +7,16 @@ exports.getAllProducts = async (req, res) => {
         const { minPrice, maxPrice, sort, category } = req.query;
         let query = {};
         
-        // Price filter
         if (minPrice || maxPrice) {
             query.price = {};
             if (minPrice) query.price.$gte = minPrice;
             if (maxPrice) query.price.$lte = maxPrice;
         }
 
-        // Category filter
         if (category) {
             query.category = category;
         }
 
-        // Build sort options
         let sortOption = {};
         switch(sort) {
             case 'price_asc':
@@ -70,7 +67,6 @@ exports.createProduct = async (req, res) => {
     try {
         const productData = req.body;
         
-        // Handle uploaded images
         if (req.files) {
             productData.images = req.files.map(file => file.path);
         }
@@ -91,16 +87,13 @@ exports.updateProduct = async (req, res) => {
     try {
         const productData = req.body;
         
-        // Handle uploaded images
         if (req.files) {
-            // Delete old images from Cloudinary
             const oldProduct = await Product.findById(req.params.id);
             for (const imageUrl of oldProduct.images) {
                 const publicId = imageUrl.split('/').pop().split('.')[0];
                 await cloudinary.uploader.destroy(publicId);
             }
             
-            // Add new images
             productData.images = req.files.map(file => file.path);
         }
 
@@ -118,7 +111,6 @@ exports.deleteProduct = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
         
-        // Delete images from Cloudinary
         for (const imageUrl of product.images) {
             const publicId = imageUrl.split('/').pop().split('.')[0];
             await cloudinary.uploader.destroy(publicId);

@@ -15,10 +15,9 @@ const createAdmin = async () => {
         });
 
         await adminUser.save();
-        console.log('Admin user created successfully');
         process.exit(0);
     } catch (error) {
-        console.error('Error creating admin:', error);
+        console.error(error);
         process.exit(1);
     }
 };
