@@ -1,4 +1,5 @@
 const Category = require('../models/categoryModel');
+const Banner = require('../models/bannerModel');
 const Product = require('../models/productModel');
 
 exports.getHome = async (req, res) => {
@@ -15,8 +16,12 @@ exports.getHome = async (req, res) => {
             };
         }));
 
+        // Fetch active banners
+        const banners = await Banner.find({ isActive: true }).sort('displayOrder');
+
         res.render('home/index', {
             categories: categoriesWithCount,
+            banners,
             layout: 'layouts/main'
         });
     } catch (error) {

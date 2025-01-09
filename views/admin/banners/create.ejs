@@ -1,0 +1,60 @@
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Create New Banner</h5>
+        </div>
+        <div class="card-body">
+            <form action="/admin/banners" method="POST" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="title" class="form-label">Title</label>
+                    <input type="text" class="form-control" id="title" name="title" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="subtitle" class="form-label">Subtitle</label>
+                    <input type="text" class="form-control" id="subtitle" name="subtitle">
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="buttonText" class="form-label">Button Text</label>
+                            <input type="text" class="form-control" id="buttonText" name="buttonText">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="buttonLink" class="form-label">Button Link</label>
+                            <input type="text" class="form-control" id="buttonLink" name="buttonLink">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="image" class="form-label">Banner Image</label>
+                    <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="displayOrder" class="form-label">Display Order</label>
+                    <input type="number" class="form-control" id="displayOrder" name="displayOrder" value="0">
+                </div>
+
+                <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="isActive" name="isActive" checked>
+                    <label class="form-check-label" for="isActive">Active</label>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Create Banner</button>
+                    <a href="/admin/banners" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div> 

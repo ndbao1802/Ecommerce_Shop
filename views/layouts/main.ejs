@@ -12,98 +12,90 @@
     <link href="/css/style.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Top Bar -->
-    <div class="top-bar bg-light py-2">
+    <!-- Single Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="language-currency">
-                    <select class="form-select form-select-sm d-inline-block w-auto me-2">
-                        <option>ENGLISH</option>
-                        <option>ESPAÑOL</option>
-                    </select>
-                    <select class="form-select form-select-sm d-inline-block w-auto">
-                        <option>$ USD</option>
-                        <option>€ EUR</option>
-                    </select>
-                </div>
-                <div class="user-actions">
+            <!-- Logo -->
+            <a class="navbar-brand" href="/">
+                <span class="text-primary">GAMING</span> STORE
+            </a>
+
+            <!-- Mobile Toggle -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Main Navigation -->
+            <div class="collapse navbar-collapse" id="mainNav">
+                <!-- Navigation Links -->
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/products">Products</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/blog">Blog</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/pages">Pages</a>
+                    </li>
+                </ul>
+
+                <!-- Search Bar -->
+                <form class="d-flex me-3" action="/products/search" method="GET">
+                    <div class="input-group">
+                        <input type="search" 
+                               class="form-control search-input" 
+                               placeholder="Search products..." 
+                               name="q">
+                        <button class="btn btn-outline-primary" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Right Side Icons -->
+                <div class="nav-icons d-flex align-items-center gap-3">
+                    <!-- Cart -->
+                    <a href="/cart" class="nav-icon position-relative">
+                        <i class="bi bi-cart3"></i>
+                        <% if (locals.cartCount && cartCount > 0) { %>
+                            <span class="cart-badge">
+                                <%= cartCount %>
+                            </span>
+                        <% } %>
+                    </a>
+
+                    <!-- Wishlist -->
+                    <a href="/wishlist" class="nav-icon">
+                        <i class="bi bi-heart"></i>
+                    </a>
+
+                    <!-- User Account -->
                     <% if (locals.user) { %>
-                        <a href="/users/profile" class="text-dark me-3">
-                            <i class="bi bi-person"></i> <%= user.name %>
-                        </a>
-                        <a href="/users/logout" class="text-dark">
-                            <i class="bi bi-box-arrow-right"></i> Logout
-                        </a>
+                        <div class="dropdown">
+                            <a class="nav-icon dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="/profile">Profile</a></li>
+                                <li><a class="dropdown-item" href="/orders">Orders</a></li>
+                                <% if (user.isAdmin) { %>
+                                    <li><a class="dropdown-item" href="/admin">Admin Panel</a></li>
+                                <% } %>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/logout">Logout</a></li>
+                            </ul>
+                        </div>
                     <% } else { %>
-                        <a href="/users/login" class="text-dark me-3">
-                            <i class="bi bi-person"></i> Login
-                        </a>
-                        <a href="/users/register" class="text-dark">
-                            <i class="bi bi-person-plus"></i> Register
+                        <a href="/login" class="nav-icon">
+                            <i class="bi bi-person-circle"></i>
                         </a>
                     <% } %>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Main Header -->
-    <header class="main-header py-4">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-3">
-                    <a href="/" class="logo text-center d-block">
-                        <h1 class="mb-0">STORE</h1>
-                    </a>
-                </div>
-                <div class="col-md-6">
-                    <form class="search-form">
-                        <div class="input-group">
-                            <input type="text" class="form-control" placeholder="Search products...">
-                            <button class="btn btn-dark" type="submit">
-                                <i class="bi bi-search"></i>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-                <div class="col-md-3">
-                    <div class="d-flex justify-content-end">
-                        <a href="/cart" class="cart-icon position-relative me-3">
-                            <i class="bi bi-bag fs-4"></i>
-                            <span class="cart-count position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary">
-                                0
-                            </span>
-                        </a>
-                        <div class="cart-info text-end">
-                            <small class="d-block">Your Cart</small>
-                            <span class="fw-bold">$0.00</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <!-- Navigation -->
-    <nav class="main-nav bg-dark">
-        <div class="container">
-            <ul class="nav justify-content-center">
-                <li class="nav-item">
-                    <a class="nav-link text-white" href="/">HOME</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-white" href="/products">SHOP</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-white" href="/categories">CATEGORIES</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-white" href="/blog">BLOG</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-white" href="/contact">CONTACT</a>
-                </li>
-            </ul>
         </div>
     </nav>
 
@@ -111,6 +103,109 @@
     <main>
         <%- body %>
     </main>
+
+    <style>
+    .navbar {
+        background-color: #0a0a0a;
+        padding: 1rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .navbar-brand {
+        font-size: 1.5rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+
+    .nav-link {
+        color: rgba(255,255,255,0.8) !important;
+        font-weight: 500;
+        padding: 0.5rem 1rem !important;
+        transition: color 0.3s;
+    }
+
+    .nav-link:hover {
+        color: var(--bs-primary) !important;
+    }
+
+    .search-input {
+        background-color: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: white;
+        min-width: 250px;
+    }
+
+    .search-input:focus {
+        background-color: rgba(255,255,255,0.15);
+        border-color: var(--bs-primary);
+        color: white;
+        box-shadow: none;
+    }
+
+    .search-input::placeholder {
+        color: rgba(255,255,255,0.5);
+    }
+
+    .nav-icon {
+        color: rgba(255,255,255,0.8);
+        font-size: 1.2rem;
+        text-decoration: none;
+        transition: color 0.3s;
+        padding: 0.5rem;
+    }
+
+    .nav-icon:hover {
+        color: var(--bs-primary);
+    }
+
+    .cart-badge {
+        position: absolute;
+        top: 0;
+        right: 0;
+        transform: translate(50%, -50%);
+        background-color: var(--bs-primary);
+        color: white;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 1rem;
+    }
+
+    .dropdown-menu {
+        background-color: #1a1a1a;
+        border: 1px solid rgba(255,255,255,0.1);
+        margin-top: 0.5rem;
+    }
+
+    .dropdown-item {
+        color: rgba(255,255,255,0.8);
+    }
+
+    .dropdown-item:hover {
+        background-color: rgba(255,255,255,0.1);
+        color: var(--bs-primary);
+    }
+
+    .dropdown-divider {
+        border-color: rgba(255,255,255,0.1);
+    }
+
+    @media (max-width: 991.98px) {
+        .navbar-collapse {
+            background-color: #0a0a0a;
+            padding: 1rem;
+            margin: 1rem -1rem -1rem;
+        }
+
+        .nav-icons {
+            margin-top: 1rem;
+            justify-content: center;
+        }
+
+        .search-input {
+            min-width: auto;
+        }
+    }
+    </style>
 
     <!-- Features Section -->
     <section class="features py-5 bg-light">

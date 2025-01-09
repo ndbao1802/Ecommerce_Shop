@@ -1,22 +1,73 @@
 <!-- Hero Banner Section -->
-<section class="hero-banner">
-    <div class="container">
-        <div class="banner-content text-center">
-            <h1 class="title">
-                Exploring Premier <span class="highlight">Gaming</span><br>
-                <span class="highlight">Accessories</span>
-            </h1>
-            <p class="description">
-                Discover the best gaming accessories designed to enhance your gameplay experience. 
-                From high-performance peripherals to premium gaming gear.
-            </p>
-            <div class="banner-buttons">
-                <a href="/products" class="btn btn-primary">Shop Now</a>
-                <a href="/collections" class="btn btn-outline">View Categories</a>
+<div id="heroBanner" class="carousel slide" data-bs-ride="carousel">
+    <% if (locals.banners && banners.length > 0) { %>
+        <div class="carousel-indicators">
+            <% banners.forEach((banner, index) => { %>
+                <button type="button" 
+                        data-bs-target="#heroBanner" 
+                        data-bs-slide-to="<%= index %>" 
+                        class="<%= index === 0 ? 'active' : '' %>"></button>
+            <% }); %>
+        </div>
+        
+        <div class="carousel-inner">
+            <% banners.forEach((banner, index) => { %>
+                <div class="carousel-item <%= index === 0 ? 'active' : '' %>">
+                    <div class="banner-slide" style="background-image: url('<%= banner.image.url %>')">
+                        <div class="container">
+                            <div class="banner-content">
+                                <% if (banner.subtitle) { %>
+                                    <span class="subtitle"><%= banner.subtitle %></span>
+                                <% } %>
+                                <h1 class="title">
+                                    <%= banner.title %>
+                                </h1>
+                                <% if (banner.description) { %>
+                                    <p class="description"><%= banner.description %></p>
+                                <% } %>
+                                <% if (banner.buttonText && banner.buttonLink) { %>
+                                    <div class="banner-buttons">
+                                        <a href="<%= banner.buttonLink %>" class="btn btn-primary">
+                                            <%= banner.buttonText %>
+                                        </a>
+                                    </div>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+        </div>
+        
+        <button class="carousel-control-prev" type="button" data-bs-target="#heroBanner" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#heroBanner" data-bs-slide="next">
+            <span class="carousel-control-next-icon"></span>
+        </button>
+    <% } else { %>
+        <!-- Default banner when no banners are available -->
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <div class="banner-slide" style="background-image: url('/images/default-banner.jpg')">
+                    <div class="container">
+                        <div class="banner-content">
+                            <h1 class="title">
+                                Welcome to Gaming Store
+                            </h1>
+                            <p class="description">
+                                Discover amazing gaming products
+                            </p>
+                            <div class="banner-buttons">
+                                <a href="/products" class="btn btn-primary">Shop Now</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</section>
+    <% } %>
+</div>
 
 <!-- Best Seller Products Section -->
 <section class="best-seller py-5">
@@ -268,6 +319,49 @@ body {
         font-size: 0.8rem;
         min-height: 32px;
     }
+}
+
+.banner-slide {
+    height: 80vh;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+.banner-slide::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+}
+
+.banner-content {
+    position: relative;
+    padding: 100px 0;
+    color: white;
+    text-align: center;
+}
+
+.subtitle {
+    color: var(--bs-success);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.title {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+}
+
+.description {
+    font-size: 1.2rem;
+    max-width: 600px;
+    margin: 0 auto 2rem;
 }
 </style>
 
