@@ -4,28 +4,20 @@ const categorySchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        trim: true
     },
-    slug: {
+    description: {
         type: String,
-        unique: true
+        trim: true
     },
-    description: String,
-    image: String,
-    subCategories: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'SubCategory'
-    }],
+    image: {
+        type: String,  // This should be a String to store the Cloudinary URL
+    },
     isActive: {
         type: Boolean,
         default: true
     }
 }, { timestamps: true });
-
-// Create slug before saving
-categorySchema.pre('save', function(next) {
-    this.slug = this.name.toLowerCase().replace(/ /g, '-');
-    next();
-});
 
 module.exports = mongoose.model('Category', categorySchema); 

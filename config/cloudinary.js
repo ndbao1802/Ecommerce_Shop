@@ -1,24 +1,22 @@
 const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const multer = require('multer');
+
+// Add debug logging
+console.log('Configuring Cloudinary with:', {
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: '***' // Don't log the actual secret
+});
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true
 });
 
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'ecommerce',
-        allowed_formats: ['jpg', 'jpeg', 'png', 'gif']
-    }
-});
+// Test the configuration
+cloudinary.api.ping()
+    .then(result => console.log('Cloudinary connection test successful:', result))
+    .catch(error => console.error('Cloudinary connection test failed:', error));
 
-const upload = multer({ storage: storage });
-
-module.exports = {
-    cloudinary,
-    upload
-}; 
+module.exports = { cloudinary }; 

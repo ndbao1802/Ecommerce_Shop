@@ -5,7 +5,7 @@ const categoryController = require('../controllers/admin/categoryController');
 const productController = require('../controllers/admin/productController');
 const { ensureAdmin } = require('../middleware/adminAuth');
 const homePageController = require('../controllers/admin/homePageController');
-const { uploadSingle } = require('../middleware/upload');
+const { uploadSingle, uploadMultiple } = require('../middleware/upload');
 
 // Admin auth routes
 router.get('/login', adminController.getLogin);
@@ -18,15 +18,15 @@ router.get('/dashboard', ensureAdmin, adminController.getDashboard);
 // Category Management
 router.get('/categories', ensureAdmin, categoryController.getCategories);
 router.post('/categories', ensureAdmin, uploadSingle, categoryController.createCategory);
-router.put('/categories/:id', ensureAdmin, categoryController.updateCategory);
+router.put('/categories/:id', ensureAdmin, uploadSingle, categoryController.updateCategory);
 router.delete('/categories/:id', ensureAdmin, categoryController.deleteCategory);
 
 // Product Management
 router.get('/products', ensureAdmin, productController.getProducts);
 router.get('/products/create', ensureAdmin, productController.getCreateProduct);
-router.post('/products', ensureAdmin, productController.createProduct);
+router.post('/products', ensureAdmin, uploadMultiple, productController.createProduct);
 router.get('/products/:id/edit', ensureAdmin, productController.getEditProduct);
-router.put('/products/:id', ensureAdmin, productController.updateProduct);
+router.put('/products/:id', ensureAdmin, uploadMultiple, productController.updateProduct);
 router.delete('/products/:id', ensureAdmin, productController.deleteProduct);
 
 // Product Categories
