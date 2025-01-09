@@ -1,23 +1,27 @@
-const Product = require('../models/productModel');
 const Category = require('../models/categoryModel');
+const Product = require('../models/productModel');
 
 exports.getHome = async (req, res) => {
     try {
-        const categories = await Category.find({ isActive: true }).limit(6);
-        const featuredProducts = await Product.find({ 
-            isActive: true, 
-            isFeatured: true 
-        })
-            .sort({ displayOrder: 1 })
-            .populate('category')
-            .limit(8);
+        // Fetch categories
+        const categories = await Category.find({ isActive: true });
+        
+        // Log to verify data
+        console.log('Categories found:', categories);
 
-        res.render('home', {
+        // Fetch featured products or other data you need
+        // const featuredProducts = await Product.find({ isFeatured: true });
+
+        res.render('home/index', {
             categories,
-            featuredProducts
+            // featuredProducts,
+            layout: 'layouts/main' // Make sure you're using the correct layout
         });
     } catch (error) {
-        console.error('Home page error:', error);
-        res.status(500).render('error', { message: 'Error loading home page' });
+        console.error('Error loading homepage:', error);
+        res.status(500).render('error', { 
+            message: 'Error loading homepage',
+            layout: 'layouts/main'
+        });
     }
 }; 

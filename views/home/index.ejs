@@ -1,0 +1,236 @@
+<!-- Hero Banner Section -->
+<section class="hero-banner">
+    <div class="container">
+        <div class="banner-content">
+            <span class="subtitle">Gaming</span>
+            <h1 class="title">
+                Best Pro Gaming
+                <span class="highlight">Accessories</span>
+            </h1>
+            <p class="description">
+                Gaming accessories bundle pack with headphones, game controllers, charging stations, 
+                keyboard mouse, joysticks, cases, and much more.
+            </p>
+            <div class="banner-buttons">
+                <a href="/products" class="btn btn-primary">SHOP PRODUCTS</a>
+                <a href="/collections" class="btn btn-outline">VIEW COLLECTIONS</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Shop by Category Section -->
+<section class="shop-by-category py-4">
+    <div class="container">
+        <h2 class="section-title text-center mb-4">Shop by Category</h2>
+        <div class="row g-4">
+            <% categories.forEach(category => { %>
+                <div class="col-md-4 col-lg-3">
+                    <div class="category-card">
+                        <img src="<%= category.image || '/images/default-category.jpg' %>" 
+                             class="category-image"
+                             alt="<%= category.name %>">
+                        <div class="category-content">
+                            <h3 class="category-title"><%= category.name %></h3>
+                            <p class="category-description"><%= category.description %></p>
+                            <a href="/products?category=<%= category._id %>" class="btn btn-primary">View Products</a>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+        </div>
+    </div>
+</section>
+
+<style>
+.shop-by-category {
+    background-color: #f8f9fa;
+    padding: 40px 0;
+}
+
+.section-title {
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 2rem;
+}
+
+.category-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    height: 100%;
+}
+
+.category-card:hover {
+    transform: translateY(-5px);
+}
+
+.category-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.category-content {
+    padding: 1.5rem;
+}
+
+.category-title {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.category-description {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    min-height: 40px;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border: none;
+    padding: 0.5rem 1rem;
+    transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.hero-banner {
+    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+                url('/images/banner-bg.jpg') center/cover;
+    min-height: 600px;
+    display: flex;
+    align-items: center;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.banner-content {
+    max-width: 600px;
+    padding: 2rem 0;
+}
+
+.subtitle {
+    color: #007bff;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.title {
+    font-size: 3.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 1.5rem;
+}
+
+.highlight {
+    display: block;
+    color: #007bff;
+}
+
+.description {
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+    line-height: 1.6;
+}
+
+.banner-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.banner-buttons .btn {
+    padding: 0.8rem 2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: #007bff;
+    border: none;
+}
+
+.btn-outline {
+    border: 2px solid white;
+    color: white;
+    background: transparent;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+    transform: translateY(-2px);
+}
+
+.btn-outline:hover {
+    background: white;
+    color: #000;
+    transform: translateY(-2px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .hero-banner {
+        min-height: 500px;
+    }
+
+    .title {
+        font-size: 2.5rem;
+    }
+
+    .banner-buttons {
+        flex-direction: column;
+    }
+
+    .banner-buttons .btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const list = document.querySelector('.category-list');
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    list.addEventListener('mousedown', (e) => {
+        isDown = true;
+        list.style.cursor = 'grabbing';
+        startX = e.pageX - list.offsetLeft;
+        scrollLeft = list.scrollLeft;
+    });
+
+    list.addEventListener('mouseleave', () => {
+        isDown = false;
+        list.style.cursor = 'grab';
+    });
+
+    list.addEventListener('mouseup', () => {
+        isDown = false;
+        list.style.cursor = 'grab';
+    });
+
+    list.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - list.offsetLeft;
+        const walk = (x - startX) * 2;
+        list.scrollLeft = scrollLeft - walk;
+    });
+});
+</script> 
