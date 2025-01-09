@@ -1,12 +1,8 @@
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Create Product</h2>
-        <a href="/admin/products" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Products
-        </a>
-    </div>
-
     <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Create New Product</h5>
+        </div>
         <div class="card-body">
             <form action="/admin/products" method="POST" enctype="multipart/form-data">
                 <div class="row">
@@ -18,92 +14,69 @@
 
                         <div class="mb-3">
                             <label for="description" class="form-label">Description</label>
-                            <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+                            <textarea class="form-control" id="description" name="description" rows="4"></textarea>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="price" class="form-label">Price</label>
-                                    <input type="number" class="form-control" id="price" name="price" step="0.01" required>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="price" name="price" step="0.01" required>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="originalPrice" class="form-label">Original Price</label>
-                                    <input type="number" class="form-control" id="originalPrice" name="originalPrice" step="0.01">
+                                    <label for="stock" class="form-label">Stock</label>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="stock" 
+                                           name="stock" 
+                                           min="0" 
+                                           value="0" 
+                                           required>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="category" class="form-label">Category</label>
-                            <select class="form-select" id="category" name="category" required>
-                                <option value="">Select Category</option>
-                                <% categories.forEach(category => { %>
-                                    <option value="<%= category._id %>"><%= category.name %></option>
-                                <% }); %>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Product Images</label>
-                            <input type="file" class="form-control" name="images" multiple accept="image/*" required>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="category" class="form-label">Category</label>
+                                    <select class="form-select" id="category" name="category" required>
+                                        <option value="">Select Category</option>
+                                        <% categories.forEach(category => { %>
+                                            <option value="<%= category._id %>"><%= category.name %></option>
+                                        <% }); %>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="brand" class="form-label">Brand</label>
+                                    <input type="text" class="form-control" id="brand" name="brand">
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0">Variants</h5>
-                            </div>
-                            <div class="card-body">
-                                <div id="variants">
-                                    <div class="variant-item mb-3">
-                                        <div class="row">
-                                            <div class="col">
-                                                <input type="text" class="form-control" name="colors[]" placeholder="Color">
-                                            </div>
-                                            <div class="col">
-                                                <input type="text" class="form-control" name="sizes[]" placeholder="Size">
-                                            </div>
-                                            <div class="col">
-                                                <input type="number" class="form-control" name="stocks[]" placeholder="Stock">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="addVariant()">
-                                    <i class="bi bi-plus"></i> Add Variant
-                                </button>
-                            </div>
+                        <div class="mb-3">
+                            <label for="images" class="form-label">Product Images</label>
+                            <input type="file" 
+                                   class="form-control" 
+                                   id="images" 
+                                   name="images" 
+                                   multiple 
+                                   accept="image/*"
+                                   onchange="previewImages(this)">
+                            <small class="text-muted">You can select multiple images</small>
+                            <div id="imagePreview" class="mt-2 d-flex flex-wrap gap-2"></div>
                         </div>
 
-                        <div class="card mt-3">
-                            <div class="card-header">
-                                <h5 class="mb-0">Product Details</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    <label for="brand" class="form-label">Brand</label>
-                                    <input type="text" class="form-control" id="brand" name="details[brand]">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="material" class="form-label">Material</label>
-                                    <input type="text" class="form-control" id="material" name="details[material]">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="origin" class="form-label">Origin</label>
-                                    <input type="text" class="form-control" id="origin" name="details[origin]">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="warranty" class="form-label">Warranty</label>
-                                    <input type="text" class="form-control" id="warranty" name="details[warranty]">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-check mt-3">
+                        <div class="form-check mb-3">
                             <input type="checkbox" class="form-check-input" id="isActive" name="isActive" checked>
                             <label class="form-check-label" for="isActive">Active</label>
                         </div>
@@ -117,34 +90,34 @@
             </form>
         </div>
     </div>
-</div>
+</div> 
 
 <script>
-function addVariant() {
-    const variantHtml = `
-        <div class="variant-item mb-3">
-            <div class="row">
-                <div class="col">
-                    <input type="text" class="form-control" name="colors[]" placeholder="Color">
-                </div>
-                <div class="col">
-                    <input type="text" class="form-control" name="sizes[]" placeholder="Size">
-                </div>
-                <div class="col">
-                    <input type="number" class="form-control" name="stocks[]" placeholder="Stock">
-                </div>
-                <div class="col-auto">
-                    <button type="button" class="btn btn-danger btn-sm" onclick="removeVariant(this)">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.getElementById('variants').insertAdjacentHTML('beforeend', variantHtml);
-}
+function previewImages(input) {
+    const preview = document.getElementById('imagePreview');
+    preview.innerHTML = '';
 
-function removeVariant(button) {
-    button.closest('.variant-item').remove();
+    if (input.files) {
+        Array.from(input.files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const div = document.createElement('div');
+                div.style.width = '100px';
+                div.style.height = '100px';
+                div.style.overflow = 'hidden';
+                div.style.borderRadius = '4px';
+
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+
+                div.appendChild(img);
+                preview.appendChild(div);
+            }
+            reader.readAsDataURL(file);
+        });
+    }
 }
 </script> 

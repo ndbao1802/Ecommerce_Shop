@@ -66,6 +66,15 @@ app.set('layout', 'layouts/main');
 // Add method-override middleware before routes
 app.use(methodOverride('_method'));
 
+// Add this before your routes
+app.use((req, res, next) => {
+    if (req.method === 'POST' && req.path === '/admin/products') {
+        console.log('Product creation request body:', req.body);
+        console.log('Product creation request files:', req.files);
+    }
+    next();
+});
+
 // Routes
 app.get('/', homeController.getHome);
 app.use('/users', userRoutes);

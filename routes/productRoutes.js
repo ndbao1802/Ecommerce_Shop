@@ -5,7 +5,7 @@ const { uploadMultiple } = require('../middleware/upload');
 
 // Public routes
 router.get('/', productController.getAllProducts);
-router.get('/:id', productController.getProductById);
+router.get('/:id', productController.getProduct);
 
 // Protected routes
 router.post('/', uploadMultiple, productController.createProduct);

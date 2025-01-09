@@ -25,30 +25,28 @@
                         <% products.forEach(product => { %>
                             <tr>
                                 <td>
-                                    <img src="<%= product.images[0] || '/images/default-product.jpg' %>" 
-                                         alt="<%= product.name %>" 
+                                    <img src="<%= product.images && product.images[0] ? product.images[0].url : '/images/default-product.jpg' %>" 
+                                         alt="<%= product.name %>"
                                          style="width: 50px; height: 50px; object-fit: cover;">
                                 </td>
                                 <td><%= product.name %></td>
                                 <td><%= product.category ? product.category.name : 'N/A' %></td>
-                                <td>$<%= product.price %></td>
-                                <td>
-                                    <% let totalStock = 0; %>
-                                    <% product.variants.forEach(variant => { totalStock += variant.stock; }); %>
-                                    <%= totalStock %>
-                                </td>
+                                <td>$<%= product.price.toFixed(2) %></td>
+                                <td><%= product.stock %></td>
                                 <td>
                                     <span class="badge bg-<%= product.isActive ? 'success' : 'danger' %>">
                                         <%= product.isActive ? 'Active' : 'Inactive' %>
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="/admin/products/<%= product._id %>/edit" class="btn btn-sm btn-primary">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <button class="btn btn-sm btn-danger" onclick="deleteProduct('<%= product._id %>')">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                    <div class="btn-group">
+                                        <a href="/admin/products/<%= product._id %>/edit" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteProduct('<%= product._id %>')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         <% }); %>
@@ -69,4 +67,19 @@ function deleteProduct(productId) {
         form.submit();
     }
 }
-</script> 
+</script>
+
+<style>
+.table img {
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-group {
+    gap: 0.25rem;
+}
+
+.badge {
+    padding: 0.5em 0.75em;
+}
+</style> 

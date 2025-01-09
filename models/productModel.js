@@ -1,99 +1,50 @@
 const mongoose = require('mongoose');
 
+// Clear any existing models to avoid schema conflicts
+mongoose.models = {};
+mongoose.modelSchemas = {};
+
 const productSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true,
-        trim: true
-    },
-    slug: {
-        type: String,
-        unique: true
-    },
-    description: {
-        type: String,
         required: true
     },
-    details: {
-        brand: String,
-        material: String,
-        origin: String,
-        warranty: String
-    },
+    description: String,
     price: {
         type: Number,
         required: true
-    },
-    originalPrice: {
-        type: Number
-    },
-    discount: {
-        type: Number,
-        default: 0
     },
     category: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Category',
         required: true
     },
-    subCategory: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'SubCategory'
+    stock: {
+        type: Number,
+        default: 0,
+        min: 0
     },
-    variants: [{
-        color: String,
-        size: String,
-        stock: Number,
-        sku: String
-    }],
     images: [{
-        type: String,
-        required: true
+        url: String,
+        public_id: String
     }],
-    ratings: [{
-        user: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        rating: {
-            type: Number,
-            min: 1,
-            max: 5
-        },
-        review: String,
-        images: [String],
-        date: {
-            type: Date,
-            default: Date.now
-        }
-    }],
-    averageRating: {
-        type: Number,
-        default: 0
-    },
-    totalSold: {
-        type: Number,
-        default: 0
-    },
+    brand: String,
     isActive: {
         type: Boolean,
         default: true
-    },
-    tags: [String],
-    isFeatured: {
-        type: Boolean,
-        default: false
-    },
-    displayOrder: {
-        type: Number,
-        default: 0
     }
-}, { timestamps: true });
+}, { 
+    timestamps: true,
+    strict: true,
+    strictQuery: true
+});
 
-// Create slug before saving
+// Remove all middleware
 productSchema.pre('save', function(next) {
-    this.slug = this.name.toLowerCase().replace(/ /g, '-');
     next();
 });
 
-module.exports = mongoose.model('Product', productSchema); 
+// Create a new model instance
+const Product = mongoose.model('Product', productSchema);
+
+module.exports = Product; 

@@ -124,4 +124,24 @@ exports.deleteProduct = async (req, res) => {
         req.flash('error_msg', 'Error deleting product');
         res.redirect('/products');
     }
+};
+
+exports.getProduct = async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id).populate('category');
+        
+        if (!product) {
+            req.flash('error_msg', 'Product not found');
+            return res.redirect('/products');
+        }
+
+        res.render('products/show', {
+            product,
+            title: product.name
+        });
+    } catch (error) {
+        console.error('Error fetching product:', error);
+        req.flash('error_msg', 'Error loading product');
+        res.redirect('/products');
+    }
 }; 
