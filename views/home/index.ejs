@@ -1,39 +1,59 @@
 <!-- Hero Banner Section -->
 <section class="hero-banner">
     <div class="container">
-        <div class="banner-content">
-            <span class="subtitle">Gaming</span>
+        <div class="banner-content text-center">
             <h1 class="title">
-                Best Pro Gaming
+                Exploring Premier <span class="highlight">Gaming</span><br>
                 <span class="highlight">Accessories</span>
             </h1>
             <p class="description">
-                Gaming accessories bundle pack with headphones, game controllers, charging stations, 
-                keyboard mouse, joysticks, cases, and much more.
+                Discover the best gaming accessories designed to enhance your gameplay experience. 
+                From high-performance peripherals to premium gaming gear.
             </p>
             <div class="banner-buttons">
-                <a href="/products" class="btn btn-primary">SHOP PRODUCTS</a>
-                <a href="/collections" class="btn btn-outline">VIEW COLLECTIONS</a>
+                <a href="/products" class="btn btn-primary">Shop Now</a>
+                <a href="/collections" class="btn btn-outline">View Categories</a>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Shop by Category Section -->
-<section class="shop-by-category py-4">
+<!-- Best Seller Products Section -->
+<section class="best-seller py-5">
     <div class="container">
-        <h2 class="section-title text-center mb-4">Shop by Category</h2>
+        <div class="section-header d-flex justify-content-between align-items-center mb-4">
+            <h2 class="section-title">Best Seller <span class="highlight">Products</span></h2>
+            <a href="/products" class="view-all">View All</a>
+        </div>
+        <!-- Add your product cards here -->
+    </div>
+</section>
+
+<!-- Shop by Category Section -->
+<section class="shop-by-category py-5">
+    <div class="container">
+        <div class="section-header d-flex justify-content-between align-items-center mb-4">
+            <h2 class="section-title">Shop by <span class="highlight">Category</span></h2>
+            <a href="/categories" class="view-all">View All</a>
+        </div>
         <div class="row g-4">
             <% categories.forEach(category => { %>
-                <div class="col-md-4 col-lg-3">
+                <div class="col-6 col-md-3">
                     <div class="category-card">
-                        <img src="<%= category.image || '/images/default-category.jpg' %>" 
-                             class="category-image"
-                             alt="<%= category.name %>">
+                        <div class="category-image">
+                            <img src="<%= category.image || '/images/default-category.jpg' %>" 
+                                 alt="<%= category.name %>"
+                                 class="img-fluid">
+                        </div>
                         <div class="category-content">
                             <h3 class="category-title"><%= category.name %></h3>
                             <p class="category-description"><%= category.description %></p>
-                            <a href="/products?category=<%= category._id %>" class="btn btn-primary">View Products</a>
+                            <div class="category-action">
+                                <span class="product-count">
+                                    <%= category.productCount %> Product<%= category.productCount !== 1 ? 's' : '' %>
+                                </span>
+                                <a href="/products?category=<%= category._id %>" class="btn btn-outline btn-sm">View All</a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -43,34 +63,150 @@
 </section>
 
 <style>
-.shop-by-category {
-    background-color: #f8f9fa;
-    padding: 40px 0;
+:root {
+    --primary-color: #00ff00;
+    --dark-bg: #0a0a0a;
+    --card-bg: #1a1a1a;
+    --text-color: #ffffff;
+}
+
+body {
+    background-color: var(--dark-bg);
+    color: var(--text-color);
+}
+
+.hero-banner {
+    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+                url('/images/gaming-banner.jpg') center/cover;
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.banner-content {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.title {
+    font-size: 3.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+}
+
+.highlight {
+    color: var(--primary-color);
+}
+
+.description {
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+.banner-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.btn {
+    padding: 0.8rem 2.5rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    border: none;
+    color: var(--dark-bg);
+}
+
+.btn-outline {
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    background: transparent;
+}
+
+.btn-primary:hover {
+    background: #00cc00;
+    transform: translateY(-2px);
+}
+
+.btn-outline:hover {
+    background: var(--primary-color);
+    color: var(--dark-bg);
+    transform: translateY(-2px);
+}
+
+/* Best Seller Section */
+.best-seller {
+    background-color: var(--dark-bg);
+}
+
+.section-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 1rem;
 }
 
 .section-title {
     font-size: 2rem;
-    color: #333;
-    margin-bottom: 2rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.view-all {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: opacity 0.3s ease;
+}
+
+.view-all:hover {
+    opacity: 0.8;
+}
+
+/* Shop by Category Section */
+.shop-by-category {
+    background-color: var(--dark-bg);
+    padding: 4rem 0;
 }
 
 .category-card {
-    background: white;
+    background: var(--card-bg);
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 15px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 255, 0, 0.05);
+    transition: all 0.3s ease;
     height: 100%;
 }
 
 .category-card:hover {
     transform: translateY(-5px);
+    box-shadow: 0 6px 20px rgba(0, 255, 0, 0.1);
 }
 
 .category-image {
-    width: 100%;
+    position: relative;
+    overflow: hidden;
     height: 200px;
+}
+
+.category-image img {
+    width: 100%;
+    height: 100%;
     object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.category-card:hover .category-image img {
+    transform: scale(1.05);
 }
 
 .category-content {
@@ -79,113 +215,35 @@
 
 .category-title {
     font-size: 1.25rem;
+    color: var(--text-color);
     margin-bottom: 0.5rem;
-    color: #333;
 }
 
 .category-description {
-    color: #666;
+    color: rgba(255, 255, 255, 0.7);
     font-size: 0.9rem;
     margin-bottom: 1rem;
     min-height: 40px;
 }
 
-.btn-primary {
-    background-color: #007bff;
-    border: none;
-    padding: 0.5rem 1rem;
-    transition: background-color 0.3s ease;
-}
-
-.btn-primary:hover {
-    background-color: #0056b3;
-}
-
-.hero-banner {
-    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
-                url('/images/banner-bg.jpg') center/cover;
-    min-height: 600px;
+.category-action {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    color: white;
-    position: relative;
-    overflow: hidden;
 }
 
-.banner-content {
-    max-width: 600px;
-    padding: 2rem 0;
+.product-count {
+    color: var(--primary-color);
+    font-size: 0.9rem;
 }
 
-.subtitle {
-    color: #007bff;
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    display: block;
-}
-
-.title {
-    font-size: 3.5rem;
-    font-weight: 700;
-    line-height: 1.2;
-    margin-bottom: 1.5rem;
-}
-
-.highlight {
-    display: block;
-    color: #007bff;
-}
-
-.description {
-    font-size: 1.1rem;
-    margin-bottom: 2rem;
-    opacity: 0.9;
-    line-height: 1.6;
-}
-
-.banner-buttons {
-    display: flex;
-    gap: 1rem;
-}
-
-.banner-buttons .btn {
-    padding: 0.8rem 2rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border-radius: 5px;
-    transition: all 0.3s ease;
-}
-
-.btn-primary {
-    background: #007bff;
-    border: none;
-}
-
-.btn-outline {
-    border: 2px solid white;
-    color: white;
-    background: transparent;
-}
-
-.btn-primary:hover {
-    background: #0056b3;
-    transform: translateY(-2px);
-}
-
-.btn-outline:hover {
-    background: white;
-    color: #000;
-    transform: translateY(-2px);
+.btn-sm {
+    padding: 0.4rem 1rem;
+    font-size: 0.875rem;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    .hero-banner {
-        min-height: 500px;
-    }
-
     .title {
         font-size: 2.5rem;
     }
@@ -196,7 +254,19 @@
 
     .banner-buttons .btn {
         width: 100%;
-        text-align: center;
+    }
+
+    .category-image {
+        height: 150px;
+    }
+    
+    .category-title {
+        font-size: 1.1rem;
+    }
+    
+    .category-description {
+        font-size: 0.8rem;
+        min-height: 32px;
     }
 }
 </style>

@@ -3,19 +3,21 @@ const Product = require('../models/productModel');
 
 exports.getHome = async (req, res) => {
     try {
-        // Fetch categories
+        // Fetch categories with product counts
         const categories = await Category.find({ isActive: true });
         
-        // Log to verify data
-        console.log('Categories found:', categories);
-
-        // Fetch featured products or other data you need
-        // const featuredProducts = await Product.find({ isFeatured: true });
+        // Get product count for each category
+        const categoriesWithCount = await Promise.all(categories.map(async (category) => {
+            const productCount = await Product.countDocuments({ category: category._id });
+            return {
+                ...category.toObject(),
+                productCount
+            };
+        }));
 
         res.render('home/index', {
-            categories,
-            // featuredProducts,
-            layout: 'layouts/main' // Make sure you're using the correct layout
+            categories: categoriesWithCount,
+            layout: 'layouts/main'
         });
     } catch (error) {
         console.error('Error loading homepage:', error);
