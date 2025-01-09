@@ -20,11 +20,11 @@ exports.postLogin = (req, res, next) => {
 
 exports.postRegister = async (req, res) => {
     try {
-        const { name, email, password, phone } = req.body;
+        const { name, email, password } = req.body;
 
         // Validation
         const errors = [];
-        if (!name || !email || !password || !phone) {
+        if (!name || !email || !password) {
             errors.push('All fields are required');
         }
         if (password.length < 6) {
@@ -41,15 +41,16 @@ exports.postRegister = async (req, res) => {
             return res.redirect('/users/register');
         }
 
+        // Set isAdmin true for specific email
+        const isAdmin = email === 'admin@gmail.com';
+
         // Create new user
         const newUser = new User({
             name,
             email,
-            password, 
-            phone,
-            addresses: [],
-            cart: [],
-            wishlist: []
+            password,
+            isAdmin,
+            isActive: true
         });
 
         await newUser.save();

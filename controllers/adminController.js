@@ -11,26 +11,38 @@ exports.getLogin = (req, res) => {
 exports.postLogin = (req, res, next) => {
     passport.authenticate('local', async (err, user, info) => {
         try {
-            if (err) { return next(err); }
-            
-            if (!user) {
-                req.flash('error_msg', info.message);
+            if (err) {
+                console.error('Authentication error:', err);
+                req.flash('error_msg', 'Authentication error occurred');
                 return res.redirect('/admin/login');
             }
 
-            // Check if user has admin role
-            const hasAdminRole = user.roles.some(role => role.name === 'admin');
-            if (!hasAdminRole) {
+            if (!user) {
+                req.flash('error_msg', info.message || 'Invalid credentials');
+                return res.redirect('/admin/login');
+            }
+
+            // Check if user is admin
+            if (!user.isAdmin) {
                 req.flash('error_msg', 'Access denied. Admin privileges required.');
                 return res.redirect('/admin/login');
             }
 
-            req.logIn(user, function(err) {
-                if (err) { return next(err); }
-                return res.redirect('/admin/dashboard');
+            // Log in the user
+            req.logIn(user, (err) => {
+                if (err) {
+                    console.error('Login error:', err);
+                    req.flash('error_msg', 'Error during login');
+                    return res.redirect('/admin/login');
+                }
+
+                // Redirect to admin dashboard
+                res.redirect('/admin/dashboard');
             });
         } catch (error) {
-            return next(error);
+            console.error('Login error:', error);
+            req.flash('error_msg', 'An error occurred during login');
+            res.redirect('/admin/login');
         }
     })(req, res, next);
 };
@@ -81,8 +93,8 @@ exports.getProducts = async (req, res) => {
 
 exports.getUsers = async (req, res) => {
     try {
-        const users = await User.find().populate('roles').select('-password');
-        res.render('admin/users', {
+        const users = await User.find().sort({ createdAt: -1 });
+        res.render('admin/users/index', {
             layout: 'layouts/adminLayout',
             users
         });
@@ -107,37 +119,36 @@ exports.getOrders = async (req, res) => {
     }
 };
 
-exports.getCreateUser = async (req, res) => {
-    try {
-        const roles = await Role.find();
-        res.render('admin/users/create', {
-            layout: 'layouts/adminLayout',
-            roles
-        });
-    } catch (error) {
-        req.flash('error_msg', 'Error loading roles');
-        res.redirect('/admin/users');
-    }
+exports.getCreateUser = (req, res) => {
+    res.render('admin/users/create', {
+        layout: 'layouts/adminLayout'
+    });
 };
 
 exports.postCreateUser = async (req, res) => {
     try {
-        const { name, email, password, phone, roles } = req.body;
+        const { name, email, password, confirmPassword, isAdmin, isActive } = req.body;
 
-        // Validation
+        // Validate password match
+        if (password !== confirmPassword) {
+            req.flash('error_msg', 'Passwords do not match');
+            return res.redirect('/admin/users/create');
+        }
+
+        // Check if user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             req.flash('error_msg', 'Email already registered');
             return res.redirect('/admin/users/create');
         }
 
-        // Create new user with roles
+        // Create new user
         const user = new User({
             name,
             email,
-            password,
-            phone,
-            roles: roles // Array of role IDs
+            password, // Will be hashed by the model's pre-save hook
+            isAdmin: isAdmin === 'on',
+            isActive: isActive === 'on'
         });
 
         await user.save();

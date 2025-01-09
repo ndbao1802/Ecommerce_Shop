@@ -6,6 +6,7 @@ const productController = require('../controllers/admin/productController');
 const { ensureAdmin } = require('../middleware/adminAuth');
 const homePageController = require('../controllers/admin/homePageController');
 const { uploadSingle, uploadMultiple } = require('../middleware/upload');
+const User = require('../models/userModel');
 
 // Admin auth routes
 router.get('/login', adminController.getLogin);

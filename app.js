@@ -13,6 +13,7 @@ const productRoutes = require('./routes/productRoutes');
 const homeController = require('./controllers/homeController');
 const adminRoutes = require('./routes/adminRoutes');
 const errorHandler = require('./middleware/errorHandler');
+const cartRoutes = require('./routes/cartRoutes');
 
 const app = express();
 
@@ -70,6 +71,7 @@ app.get('/', homeController.getHome);
 app.use('/users', userRoutes);
 app.use('/products', productRoutes);
 app.use('/admin', adminRoutes);
+app.use('/cart', cartRoutes);
 
 // Add error handling middleware
 app.use(errorHandler);
