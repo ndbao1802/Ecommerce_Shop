@@ -1,0 +1,105 @@
+/* General Styles */
+body {
+    font-family: 'Inter', sans-serif;
+    color: #333;
+}
+
+/* Top Bar */
+.top-bar {
+    font-size: 0.875rem;
+}
+
+.top-bar select {
+    border: none;
+    background: transparent;
+    font-size: 0.875rem;
+}
+
+/* Main Header */
+.main-header {
+    border-bottom: 1px solid #eee;
+}
+
+.logo h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
+.search-form .form-control {
+    border-radius: 0;
+    border-right: none;
+}
+
+.search-form .btn {
+    border-radius: 0;
+}
+
+/* Navigation */
+.main-nav {
+    border-bottom: 1px solid #eee;
+}
+
+.main-nav .nav-link {
+    padding: 1rem 1.5rem;
+    font-weight: 500;
+    letter-spacing: 1px;
+}
+
+.main-nav .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Hero Section */
+.hero-slider {
+    background-color: #f8f9fa;
+}
+
+.hero-slider .carousel-item {
+    height: 500px;
+    background-size: cover;
+    background-position: center;
+}
+
+/* Features Section */
+.features i {
+    color: #333;
+}
+
+/* Product Cards */
+.product-card {
+    border: none;
+    transition: transform 0.3s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+}
+
+.product-card .card-img-top {
+    height: 250px;
+    object-fit: cover;
+}
+
+/* Footer */
+footer a:hover {
+    text-decoration: none;
+    color: #fff !important;
+}
+
+/* Cart Icon */
+.cart-icon {
+    text-decoration: none;
+    color: #333;
+}
+
+.cart-count {
+    font-size: 0.75rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero-slider .carousel-item {
+        height: 300px;
+    }
+} 
