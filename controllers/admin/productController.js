@@ -2,7 +2,7 @@ const Product = require('../../models/productModel');
 const Category = require('../../models/categoryModel');
 const { cloudinary } = require('../../config/cloudinary');
 
-exports.getProducts = async (req, res) => {
+const getProducts = async (req, res) => {
     try {
         const products = await Product.find().populate('category');
         res.render('admin/products/index', {
@@ -15,7 +15,7 @@ exports.getProducts = async (req, res) => {
     }
 };
 
-exports.getCreateProduct = async (req, res) => {
+const getCreateProduct = async (req, res) => {
     try {
         const categories = await Category.find({ isActive: true });
         res.render('admin/products/create', {
@@ -28,12 +28,8 @@ exports.getCreateProduct = async (req, res) => {
     }
 };
 
-exports.createProduct = async (req, res) => {
+const createProduct = async (req, res) => {
     try {
-        console.log('Request body:', req.body);
-        console.log('Request files:', req.files);
-
-        // Create product data object explicitly
         const productData = {
             name: req.body.name,
             description: req.body.description || '',
@@ -45,7 +41,6 @@ exports.createProduct = async (req, res) => {
             images: []
         };
 
-        // Handle image uploads
         if (req.files && req.files.length > 0) {
             const imagePromises = req.files.map(file => 
                 cloudinary.uploader.upload(file.path, {
@@ -60,24 +55,19 @@ exports.createProduct = async (req, res) => {
             }));
         }
 
-        console.log('Creating product with data:', productData);
-
-        // Create and save the product
         const product = new Product(productData);
-        const savedProduct = await product.save();
-
-        console.log('Product saved successfully:', savedProduct);
+        await product.save();
 
         req.flash('success_msg', 'Product created successfully');
         res.redirect('/admin/products');
     } catch (error) {
-        console.error('Full error:', error);
+        console.error('Error creating product:', error);
         req.flash('error_msg', 'Error creating product: ' + error.message);
         res.redirect('/admin/products/create');
     }
 };
 
-exports.getEditProduct = async (req, res) => {
+const getEditProduct = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id).populate('category');
         const categories = await Category.find({ isActive: true });
@@ -93,72 +83,87 @@ exports.getEditProduct = async (req, res) => {
             categories
         });
     } catch (error) {
+        console.error('Error loading product:', error);
         req.flash('error_msg', 'Error loading product');
         res.redirect('/admin/products');
     }
 };
 
-exports.updateProduct = async (req, res) => {
+const updateProduct = async (req, res) => {
     try {
-        const {
-            name,
-            description,
-            price,
-            originalPrice,
-            category,
-            details,
-            existingImages
-        } = req.body;
-
-        // Handle image uploads
-        let images = existingImages ? (Array.isArray(existingImages) ? existingImages : [existingImages]) : [];
-        if (req.files) {
-            const newImages = req.files.map(file => file.path);
-            images = [...images, ...newImages];
+        const { name, description, price, stock, category, brand, isActive, existingImages } = req.body;
+        const product = await Product.findById(req.params.id);
+        
+        if (!product) {
+            req.flash('error_msg', 'Product not found');
+            return res.redirect('/admin/products');
         }
 
-        // Update variants
-        const variants = [];
-        if (req.body.colors && req.body.sizes && req.body.stocks) {
-            const colors = Array.isArray(req.body.colors) ? req.body.colors : [req.body.colors];
-            const sizes = Array.isArray(req.body.sizes) ? req.body.sizes : [req.body.sizes];
-            const stocks = Array.isArray(req.body.stocks) ? req.body.stocks : [req.body.stocks];
-
-            colors.forEach((color, index) => {
-                variants.push({
-                    color,
-                    size: sizes[index],
-                    stock: stocks[index],
-                    sku: `${name.substring(0, 3).toUpperCase()}-${color.substring(0, 2)}-${sizes[index]}`
-                });
-            });
+        let updatedImages = [];
+        
+        if (existingImages) {
+            const existingImagesArray = Array.isArray(existingImages) ? existingImages : [existingImages];
+            updatedImages = product.images.filter(image => 
+                existingImagesArray.includes(image.public_id)
+            );
         }
 
-        await Product.findByIdAndUpdate(req.params.id, {
+        const removedImages = req.body['removedImages[]'];
+        if (removedImages) {
+            const removedImagesArray = Array.isArray(removedImages) ? removedImages : [removedImages];
+            const deletePromises = removedImagesArray.map(publicId => 
+                cloudinary.uploader.destroy(publicId)
+            );
+            await Promise.all(deletePromises);
+        }
+
+        if (req.files && req.files.length > 0) {
+            const uploadPromises = req.files.map(file => 
+                cloudinary.uploader.upload(file.path, {
+                    folder: 'ecommerce/products',
+                    transformation: [
+                        { width: 1000, height: 1000, crop: 'limit' },
+                        { quality: 'auto' },
+                        { fetch_format: 'auto' }
+                    ]
+                })
+            );
+            
+            const uploadedImages = await Promise.all(uploadPromises);
+            const newImages = uploadedImages.map(result => ({
+                url: result.secure_url,
+                public_id: result.public_id
+            }));
+            
+            updatedImages = [...updatedImages, ...newImages];
+        }
+
+        const updatedProduct = {
             name,
             description,
-            price,
-            originalPrice,
+            price: parseFloat(price),
+            stock: parseInt(stock),
             category,
-            images,
-            variants,
-            details: JSON.parse(details)
-        });
+            brand,
+            isActive: isActive === 'on',
+            images: updatedImages
+        };
 
+        await Product.findByIdAndUpdate(req.params.id, updatedProduct);
+        
         req.flash('success_msg', 'Product updated successfully');
         res.redirect('/admin/products');
     } catch (error) {
         console.error('Error updating product:', error);
-        req.flash('error_msg', 'Error updating product');
+        req.flash('error_msg', 'Error updating product: ' + error.message);
         res.redirect(`/admin/products/${req.params.id}/edit`);
     }
 };
 
-exports.deleteProduct = async (req, res) => {
+const deleteProduct = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
         
-        // Delete images from Cloudinary
         if (product.images && product.images.length > 0) {
             const deletePromises = product.images.map(image => 
                 cloudinary.uploader.destroy(image.public_id)
@@ -174,4 +179,13 @@ exports.deleteProduct = async (req, res) => {
         req.flash('error_msg', 'Error deleting product');
         res.redirect('/admin/products');
     }
+};
+
+module.exports = {
+    getProducts,
+    getCreateProduct,
+    createProduct,
+    getEditProduct,
+    updateProduct,
+    deleteProduct
 }; 

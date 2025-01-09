@@ -85,6 +85,15 @@ app.use('/cart', cartRoutes);
 // Add error handling middleware
 app.use(errorHandler);
 
+// Add this after your routes
+app.use((err, req, res, next) => {
+    console.error('Error:', err);
+    res.status(500).render('error', {
+        message: 'Something went wrong!',
+        error: process.env.NODE_ENV === 'development' ? err : {}
+    });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

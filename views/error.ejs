@@ -1,10 +1,9 @@
-<div class="container mt-5">
+<div class="container">
     <div class="alert alert-danger">
-        <h4 class="alert-heading">Error!</h4>
-        <p><%= message || 'Something went wrong!' %></p>
-        <hr>
-        <p class="mb-0">
-            <a href="/" class="alert-link">Return to Home</a>
-        </p>
+        <h4>Error</h4>
+        <p><%= message %></p>
+        <% if (error && error.stack) { %>
+            <pre><%= error.stack %></pre>
+        <% } %>
     </div>
 </div> 

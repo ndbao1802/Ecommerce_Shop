@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const slugify = require('slugify');
 
 // Clear any existing models to avoid schema conflicts
 mongoose.models = {};
@@ -8,6 +9,10 @@ const productSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true
+    },
+    slug: {
+        type: String,
+        unique: true
     },
     description: String,
     price: {
@@ -39,8 +44,26 @@ const productSchema = new mongoose.Schema({
     strictQuery: true
 });
 
-// Remove all middleware
+// Generate slug before saving
 productSchema.pre('save', function(next) {
+    if (this.name) {
+        this.slug = slugify(this.name + '-' + Math.random().toString(36).substring(2, 8), {
+            lower: true,
+            strict: true
+        });
+    }
+    next();
+});
+
+// Also handle slug generation on update
+productSchema.pre('findOneAndUpdate', function(next) {
+    const update = this.getUpdate();
+    if (update.name) {
+        update.slug = slugify(update.name + '-' + Math.random().toString(36).substring(2, 8), {
+            lower: true,
+            strict: true
+        });
+    }
     next();
 });
 

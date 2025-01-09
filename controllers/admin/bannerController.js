@@ -1,7 +1,7 @@
 const Banner = require('../../models/bannerModel');
-const { cloudinary } = require('../../config/cloudinary');
+const { cloudinary, optimizedUpload } = require('../../config/cloudinary');
 
-exports.getBanners = async (req, res) => {
+const getBanners = async (req, res) => {
     try {
         const banners = await Banner.find().sort('displayOrder');
         res.render('admin/banners/index', {
@@ -14,20 +14,18 @@ exports.getBanners = async (req, res) => {
     }
 };
 
-exports.getCreateBanner = (req, res) => {
+const getCreateBanner = async (req, res) => {
     res.render('admin/banners/create', {
         layout: 'layouts/adminLayout'
     });
 };
 
-exports.createBanner = async (req, res) => {
+const createBanner = async (req, res) => {
     try {
         const { title, subtitle, description, buttonText, buttonLink, displayOrder, isActive } = req.body;
 
         // Upload image to Cloudinary
-        const result = await cloudinary.uploader.upload(req.file.path, {
-            folder: 'ecommerce/banners'
-        });
+        const result = await optimizedUpload(req.file.path, 'ecommerce/banners');
 
         const banner = new Banner({
             title,
@@ -53,7 +51,7 @@ exports.createBanner = async (req, res) => {
     }
 };
 
-exports.getEditBanner = async (req, res) => {
+const getEditBanner = async (req, res) => {
     try {
         const banner = await Banner.findById(req.params.id);
         if (!banner) {
@@ -70,7 +68,7 @@ exports.getEditBanner = async (req, res) => {
     }
 };
 
-exports.updateBanner = async (req, res) => {
+const updateBanner = async (req, res) => {
     try {
         const { title, subtitle, description, buttonText, buttonLink, displayOrder, isActive } = req.body;
         const banner = await Banner.findById(req.params.id);
@@ -88,9 +86,7 @@ exports.updateBanner = async (req, res) => {
             }
             
             // Upload new image
-            const result = await cloudinary.uploader.upload(req.file.path, {
-                folder: 'ecommerce/banners'
-            });
+            const result = await optimizedUpload(req.file.path, 'ecommerce/banners');
             
             banner.image = {
                 url: result.secure_url,
@@ -117,7 +113,7 @@ exports.updateBanner = async (req, res) => {
     }
 };
 
-exports.deleteBanner = async (req, res) => {
+const deleteBanner = async (req, res) => {
     try {
         const banner = await Banner.findById(req.params.id);
         
@@ -133,4 +129,13 @@ exports.deleteBanner = async (req, res) => {
         req.flash('error_msg', 'Error deleting banner');
         res.redirect('/admin/banners');
     }
+};
+
+module.exports = {
+    getBanners,
+    getCreateBanner,
+    createBanner,
+    getEditBanner,
+    updateBanner,
+    deleteBanner
 }; 

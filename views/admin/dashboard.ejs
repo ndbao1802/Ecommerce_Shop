@@ -1,28 +1,26 @@
 <div class="container-fluid">
-    <h2 class="mb-4">Dashboard</h2>
-    
     <div class="row mb-4">
         <div class="col-md-4">
             <div class="card bg-primary text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Total Users</h5>
-                    <h2 class="card-text"><%= totalUsers %></h2>
+                    <h5 class="card-title">Products</h5>
+                    <h2 class="mb-0"><%= counts?.products || 0 %></h2>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="card bg-success text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Total Products</h5>
-                    <h2 class="card-text"><%= totalProducts %></h2>
+                    <h5 class="card-title">Categories</h5>
+                    <h2 class="mb-0"><%= counts?.categories || 0 %></h2>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="card bg-info text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Total Orders</h5>
-                    <h2 class="card-text"><%= totalOrders %></h2>
+                    <h5 class="card-title">Orders</h5>
+                    <h2 class="mb-0"><%= counts?.orders || 0 %></h2>
                 </div>
             </div>
         </div>
@@ -30,30 +28,40 @@
 
     <div class="card">
         <div class="card-header">
-            <h5 class="mb-0">Recent Orders</h5>
+            <h5 class="card-title mb-0">Recent Products</h5>
         </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Order ID</th>
-                            <th>Customer</th>
-                            <th>Amount</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Stock</th>
                             <th>Status</th>
-                            <th>Date</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <% recentOrders.forEach(order => { %>
+                        <% if (locals.recentProducts && recentProducts.length > 0) { %>
+                            <% recentProducts.forEach(product => { %>
+                                <tr>
+                                    <td><%= product.name %></td>
+                                    <td><%= product.category ? product.category.name : 'N/A' %></td>
+                                    <td>$<%= product.price.toFixed(2) %></td>
+                                    <td><%= product.stock %></td>
+                                    <td>
+                                        <span class="badge bg-<%= product.isActive ? 'success' : 'danger' %>">
+                                            <%= product.isActive ? 'Active' : 'Inactive' %>
+                                        </span>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
                             <tr>
-                                <td><%= order._id %></td>
-                                <td><%= order.user.name %></td>
-                                <td>$<%= order.totalAmount %></td>
-                                <td><%= order.status %></td>
-                                <td><%= order.createdAt.toLocaleDateString() %></td>
+                                <td colspan="5" class="text-center">No products found</td>
                             </tr>
-                        <% }); %>
+                        <% } %>
                     </tbody>
                 </table>
             </div>

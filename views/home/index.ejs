@@ -92,9 +92,16 @@
                 <div class="col-6 col-md-3">
                     <div class="category-card">
                         <div class="category-image">
-                            <img src="<%= category.image || '/images/default-category.jpg' %>" 
-                                 alt="<%= category.name %>"
-                                 class="img-fluid">
+                            <% if (category.image) { %>
+                                <img src="<%= category.image.url || category.image %>" 
+                                     alt="<%= category.name %>"
+                                     class="img-fluid"
+                                     onerror="this.src='/images/default-category.jpg'">
+                            <% } else { %>
+                                <img src="/images/default-category.jpg" 
+                                     alt="<%= category.name %>"
+                                     class="img-fluid">
+                            <% } %>
                         </div>
                         <div class="category-content">
                             <h3 class="category-title"><%= category.name %></h3>

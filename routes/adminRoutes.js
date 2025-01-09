@@ -19,6 +19,7 @@ router.get('/dashboard', ensureAdmin, adminController.getDashboard);
 // Category Management
 router.get('/categories/:id', ensureAdmin, categoryController.getCategoryById);
 router.get('/categories', ensureAdmin, categoryController.getCategories);
+router.get('/categories/:id/edit', ensureAdmin, categoryController.getEditCategory);
 router.post('/categories', ensureAdmin, uploadSingle, categoryController.createCategory);
 router.put('/categories/:id', ensureAdmin, uploadSingle, categoryController.updateCategory);
 router.delete('/categories/:id', ensureAdmin, categoryController.deleteCategory);

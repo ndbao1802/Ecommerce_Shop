@@ -2,24 +2,16 @@ const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const { cloudinary } = require('../config/cloudinary');
 
-console.log('Setting up CloudinaryStorage');
-
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'ecommerce',
-        allowed_formats: ['jpg', 'jpeg', 'png', 'gif'],
-        transformation: [{ width: 500, height: 500, crop: 'limit' }],
-        public_id: (req, file) => {
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-            console.log('Generating public_id:', `category-${uniqueSuffix}`);
-            return `category-${uniqueSuffix}`;
-        }
+        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+        transformation: [{ width: 1000, height: 1000, crop: 'limit' }]
     }
 });
 
 const fileFilter = (req, file, cb) => {
-    console.log('Filtering file:', file.mimetype);
     if (file.mimetype.startsWith('image/')) {
         cb(null, true);
     } else {
@@ -35,15 +27,25 @@ const uploadSingle = multer({
     }
 }).single('image');
 
-const uploadMultiple = multer({
-    storage: storage,
-    fileFilter: fileFilter,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
-    }
-}).array('images', 5);
+// Add error handling wrapper
+const uploadMiddleware = (req, res, next) => {
+    uploadSingle(req, res, (err) => {
+        if (err) {
+            console.error('Upload error:', err);
+            req.flash('error_msg', 'Error uploading image: ' + err.message);
+            return res.redirect('back');
+        }
+        next();
+    });
+};
 
 module.exports = {
-    uploadSingle,
-    uploadMultiple
+    uploadSingle: uploadMiddleware,
+    uploadMultiple: multer({
+        storage: storage,
+        fileFilter: fileFilter,
+        limits: {
+            fileSize: 5 * 1024 * 1024
+        }
+    }).array('images', 5)
 }; 

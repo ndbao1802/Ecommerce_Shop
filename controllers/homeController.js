@@ -4,17 +4,25 @@ const Product = require('../models/productModel');
 
 exports.getHome = async (req, res) => {
     try {
-        // Fetch categories with product counts
-        const categories = await Category.find({ isActive: true });
-        
-        // Get product count for each category
-        const categoriesWithCount = await Promise.all(categories.map(async (category) => {
-            const productCount = await Product.countDocuments({ category: category._id });
-            return {
-                ...category.toObject(),
-                productCount
-            };
-        }));
+        const categories = await Category.find({ isActive: true })
+            .lean()  // Convert to plain JavaScript objects
+            .exec();
+
+        // Add product count to each category
+        const categoriesWithCount = await Promise.all(
+            categories.map(async (category) => {
+                const count = await Product.countDocuments({ 
+                    category: category._id,
+                    isActive: true 
+                });
+                return {
+                    ...category,
+                    productCount: count,
+                    // Ensure image is properly structured
+                    image: category.image?.url || category.image || null
+                };
+            })
+        );
 
         // Fetch active banners
         const banners = await Banner.find({ isActive: true }).sort('displayOrder');

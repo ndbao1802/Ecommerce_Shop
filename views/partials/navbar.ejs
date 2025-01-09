@@ -1,38 +1,98 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-        <a class="navbar-brand" href="/">E-Commerce</a>
+        <!-- Logo -->
+        <a class="navbar-brand" href="/">
+            GAMING
+        </a>
+
+        <!-- Navbar Toggler -->
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
+
+        <!-- Navbar Links -->
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="/products">Products</a>
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/shop">Shop</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/featured">Featured</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/pages">Pages</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/about">About</a>
                 </li>
             </ul>
-            <ul class="navbar-nav">
-                <% if(locals.user) { %>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/cart">Cart</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/orders">Orders</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/users/profile">Profile</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/users/logout">Logout</a>
-                    </li>
-                <% } else { %>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/users/login">Login</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/users/register">Register</a>
-                    </li>
-                <% } %>
-            </ul>
+
+            <!-- Right Side Icons -->
+            <div class="d-flex align-items-center">
+                <a href="/search" class="nav-icon">
+                    <i class="bi bi-search"></i>
+                </a>
+                <a href="/cart" class="nav-icon">
+                    <i class="bi bi-cart3"></i>
+                </a>
+                <a href="/account" class="nav-icon">
+                    <i class="bi bi-person"></i>
+                </a>
+                <a href="#" class="nav-icon">
+                    <i class="bi bi-twitter"></i>
+                </a>
+            </div>
         </div>
     </div>
-</nav> 
+</nav>
+
+<style>
+.navbar {
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+    letter-spacing: 1px;
+}
+
+.nav-link {
+    color: rgba(255,255,255,0.8) !important;
+    font-size: 0.95rem;
+    padding: 0.5rem 1rem !important;
+    transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+    color: #fff !important;
+}
+
+.nav-icon {
+    color: rgba(255,255,255,0.8);
+    font-size: 1.2rem;
+    padding: 0.5rem;
+    margin-left: 0.5rem;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.nav-icon:hover {
+    color: #fff;
+}
+
+@media (max-width: 991.98px) {
+    .navbar-collapse {
+        padding: 1rem 0;
+    }
+    
+    .d-flex {
+        margin-top: 1rem;
+        justify-content: center;
+    }
+}
+</style> 

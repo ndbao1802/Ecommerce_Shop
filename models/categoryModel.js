@@ -11,20 +11,33 @@ const categorySchema = new mongoose.Schema({
         unique: true
     },
     description: String,
-    image: String,
+    image: {
+        type: mongoose.Schema.Types.Mixed,
+        get: function(image) {
+            if (!image) return null;
+            if (typeof image === 'string') {
+                return { url: image, public_id: null };
+            }
+            return image;
+        }
+    },
     isActive: {
         type: Boolean,
         default: true
     }
-}, { timestamps: true });
+}, { 
+    timestamps: true,
+    toJSON: { getters: true },
+    toObject: { getters: true }
+});
 
 // Generate slug before saving
 categorySchema.pre('save', function(next) {
     if (this.name) {
         this.slug = slugify(this.name, {
-            lower: true,      // Convert to lowercase
-            strict: true,     // Remove special characters
-            trim: true        // Trim whitespace
+            lower: true,
+            strict: true,
+            trim: true
         });
     }
     next();
@@ -42,5 +55,11 @@ categorySchema.pre('findOneAndUpdate', function(next) {
     }
     next();
 });
+
+// Add a helper method to handle image URLs
+categorySchema.methods.getImageUrl = function() {
+    if (!this.image) return '/images/default-category.jpg';
+    return this.image.url || this.image || '/images/default-category.jpg';
+};
 
 module.exports = mongoose.model('Category', categorySchema); 

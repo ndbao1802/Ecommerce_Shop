@@ -1,0 +1,180 @@
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Edit Product</h5>
+        </div>
+        <div class="card-body">
+            <form action="/admin/products/<%= product._id %>?_method=PUT" method="POST" enctype="multipart/form-data">
+                <div class="row">
+                    <!-- Product Basic Info -->
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Product Name</label>
+                            <input type="text" class="form-control" id="name" name="name" value="<%= product.name %>" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required><%= product.description %></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="price" class="form-label">Price</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="price" name="price" 
+                                               step="0.01" value="<%= product.price %>" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="stock" class="form-label">Stock</label>
+                                    <input type="number" class="form-control" id="stock" name="stock" 
+                                           value="<%= product.stock %>" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="category" class="form-label">Category</label>
+                                    <select class="form-select" id="category" name="category" required>
+                                        <option value="">Select Category</option>
+                                        <% categories.forEach(category => { %>
+                                            <option value="<%= category._id %>" 
+                                                    <%= product.category && product.category._id.toString() === category._id.toString() ? 'selected' : '' %>>
+                                                <%= category.name %>
+                                            </option>
+                                        <% }); %>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="brand" class="form-label">Brand</label>
+                                    <input type="text" class="form-control" id="brand" name="brand" 
+                                           value="<%= product.brand %>">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product Images -->
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">Current Images</label>
+                            <div class="current-images">
+                                <% if (product.images && product.images.length > 0) { %>
+                                    <div class="row g-2">
+                                        <% product.images.forEach((image, index) => { %>
+                                            <div class="col-6 position-relative">
+                                                <img src="<%= image.url %>" 
+                                                     alt="Product image" 
+                                                     class="img-thumbnail">
+                                                <button type="button" 
+                                                        class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1"
+                                                        onclick="removeImage(this, '<%= image.public_id %>')">
+                                                    <i class="bi bi-x"></i>
+                                                </button>
+                                                <input type="hidden" name="existingImages" value="<%= image.public_id %>">
+                                            </div>
+                                        <% }); %>
+                                    </div>
+                                <% } else { %>
+                                    <p class="text-muted">No images uploaded</p>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="images" class="form-label">Add New Images</label>
+                            <input type="file" 
+                                   class="form-control" 
+                                   id="images" 
+                                   name="images" 
+                                   multiple 
+                                   accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+                            >
+                            <small class="text-muted">Supported formats: JPG, PNG, WebP, GIF, AVIF</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="isActive" name="isActive" 
+                           <%= product.isActive ? 'checked' : '' %>>
+                    <label class="form-check-label" for="isActive">Active</label>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Update Product</button>
+                    <a href="/admin/products" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.current-images img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+}
+
+.form-label {
+    font-weight: 500;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+</style>
+
+<script>
+function removeImage(button, publicId) {
+    if (confirm('Are you sure you want to remove this image?')) {
+        const imageContainer = button.closest('.col-6');
+        imageContainer.remove();
+        
+        // You might want to keep track of removed images to handle them in your backend
+        const removedImagesInput = document.createElement('input');
+        removedImagesInput.type = 'hidden';
+        removedImagesInput.name = 'removedImages[]';
+        removedImagesInput.value = publicId;
+        document.querySelector('form').appendChild(removedImagesInput);
+    }
+}
+
+// Preview new images before upload
+document.getElementById('images').addEventListener('change', function(e) {
+    const files = e.target.files;
+    const previewContainer = document.createElement('div');
+    previewContainer.className = 'row g-2 mt-2';
+    
+    for (let file of files) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const col = document.createElement('div');
+            col.className = 'col-6';
+            col.innerHTML = `
+                <img src="${e.target.result}" 
+                     class="img-thumbnail" 
+                     style="width: 100%; height: 120px; object-fit: cover;">
+            `;
+            previewContainer.appendChild(col);
+        }
+        reader.readAsDataURL(file);
+    }
+    
+    const existingPreview = this.nextElementSibling.nextElementSibling;
+    if (existingPreview && existingPreview.classList.contains('row')) {
+        existingPreview.remove();
+    }
+    this.parentNode.appendChild(previewContainer);
+});
+</script> 
