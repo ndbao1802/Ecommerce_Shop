@@ -55,10 +55,20 @@
 
 <script>
 function editCategory(categoryId) {
-    // Fetch category data and populate modal
+    // Fetch category data
     fetch(`/admin/categories/${categoryId}`)
-        .then(response => response.json())
-        .then(category => {
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Category not found');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success) {
+                throw new Error(data.message);
+            }
+            
+            const category = data.category;
             document.getElementById('editName').value = category.name;
             document.getElementById('editDescription').value = category.description;
             document.getElementById('editIsActive').checked = category.isActive;
@@ -67,12 +77,18 @@ function editCategory(categoryId) {
                 document.getElementById('currentImage').innerHTML = `
                     <img src="${category.image}" alt="${category.name}" style="max-width: 100px;">
                 `;
+            } else {
+                document.getElementById('currentImage').innerHTML = '';
             }
             
             const form = document.getElementById('editCategoryForm');
-            form.action = `/admin/categories/${categoryId}?_method=PUT`;
+            form.action = `/admin/categories/${category.id}?_method=PUT`;
             
             new bootstrap.Modal(document.getElementById('editCategoryModal')).show();
+        })
+        .catch(error => {
+            console.error('Error fetching category:', error);
+            alert('Error fetching category data: ' + error.message);
         });
 }
 

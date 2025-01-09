@@ -17,10 +17,14 @@ router.get('/logout', adminController.logout);
 router.get('/dashboard', ensureAdmin, adminController.getDashboard);
 
 // Category Management
+router.get('/categories/:id', ensureAdmin, categoryController.getCategoryById);
 router.get('/categories', ensureAdmin, categoryController.getCategories);
 router.post('/categories', ensureAdmin, uploadSingle, categoryController.createCategory);
 router.put('/categories/:id', ensureAdmin, uploadSingle, categoryController.updateCategory);
 router.delete('/categories/:id', ensureAdmin, categoryController.deleteCategory);
+
+// Product Categories (move this after all category routes)
+router.get('/products/categories', ensureAdmin, categoryController.getProductCategories);
 
 // Product Management
 router.get('/products', ensureAdmin, productController.getProducts);
@@ -29,9 +33,6 @@ router.post('/products', ensureAdmin, uploadMultiple, productController.createPr
 router.get('/products/:id/edit', ensureAdmin, productController.getEditProduct);
 router.put('/products/:id', ensureAdmin, uploadMultiple, productController.updateProduct);
 router.delete('/products/:id', ensureAdmin, productController.deleteProduct);
-
-// Product Categories
-router.get('/products/categories', ensureAdmin, categoryController.getProductCategories);
 
 // User Management
 router.get('/users', ensureAdmin, adminController.getUsers);

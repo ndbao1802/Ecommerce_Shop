@@ -4,12 +4,24 @@ const { cloudinary } = require('../../config/cloudinary');
 
 exports.getCategories = async (req, res) => {
     try {
+        // Check if it's an API request
+        const isApiRequest = req.xhr || req.headers.accept.indexOf('json') > -1;
+        
         const categories = await Category.find();
+        
+        if (isApiRequest) {
+            return res.json({ success: true, categories });
+        }
+
         res.render('admin/categories/index', {
             layout: 'layouts/adminLayout',
             categories
         });
     } catch (error) {
+        console.error('Error loading categories:', error);
+        if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+            return res.status(500).json({ success: false, message: 'Error loading categories' });
+        }
         req.flash('error_msg', 'Error loading categories');
         res.redirect('/admin/dashboard');
     }
@@ -82,20 +94,59 @@ exports.createCategory = async (req, res) => {
 
 exports.updateCategory = async (req, res) => {
     try {
+        console.log('Update category request:', {
+            body: req.body,
+            file: req.file,
+            params: req.params
+        });
+
         const { name, description, isActive } = req.body;
-        
-        const updateData = {
-            name,
-            description,
-            isActive: isActive === 'on' || isActive === true
+        const updateData = { 
+            name, 
+            description, 
+            isActive: isActive === 'on' || isActive === true 
         };
 
-        // If there's a new image, update it
+        // If there's a new image
         if (req.file) {
+            console.log('New image file:', req.file);
+            
+            // Get the old category to find its image
+            const oldCategory = await Category.findById(req.params.id);
+            console.log('Old category:', oldCategory);
+
+            // Delete old image from Cloudinary if it exists
+            if (oldCategory && oldCategory.image) {
+                try {
+                    const publicId = oldCategory.image.split('/').pop().split('.')[0];
+                    console.log('Deleting old image with public ID:', publicId);
+                    await cloudinary.uploader.destroy(publicId);
+                } catch (cloudinaryError) {
+                    console.error('Error deleting old image:', cloudinaryError);
+                    // Continue with the update even if image deletion fails
+                }
+            }
+            
+            // Add new image URL
             updateData.image = req.file.path;
+            console.log('New image path:', updateData.image);
         }
 
-        await Category.findByIdAndUpdate(req.params.id, updateData);
+        console.log('Updating category with data:', updateData);
+
+        const updatedCategory = await Category.findByIdAndUpdate(
+            req.params.id, 
+            updateData,
+            { new: true }
+        );
+
+        if (!updatedCategory) {
+            console.log('Category not found for update');
+            req.flash('error_msg', 'Category not found');
+            return res.redirect('/admin/categories');
+        }
+
+        console.log('Category updated successfully:', updatedCategory);
         req.flash('success_msg', 'Category updated successfully');
         res.redirect('/admin/categories');
     } catch (error) {
@@ -132,5 +183,34 @@ exports.getProductCategories = async (req, res) => {
     } catch (error) {
         req.flash('error_msg', 'Error loading product categories');
         res.redirect('/admin/dashboard');
+    }
+};
+
+exports.getCategoryById = async (req, res) => {
+    try {
+        console.log('Fetching category with ID:', req.params.id);
+        const category = await Category.findById(req.params.id);
+        console.log('Found category:', category);
+
+        if (!category) {
+            console.log('Category not found');
+            return res.status(404).json({ success: false, message: 'Category not found' });
+        }
+
+        const response = {
+            success: true,
+            category: {
+                id: category._id,
+                name: category.name,
+                description: category.description,
+                image: category.image,
+                isActive: category.isActive
+            }
+        };
+        console.log('Sending response:', response);
+        res.json(response);
+    } catch (error) {
+        console.error('Error fetching category:', error);
+        res.status(500).json({ success: false, message: 'Error fetching category' });
     }
 }; 

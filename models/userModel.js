@@ -40,7 +40,7 @@ const userSchema = new mongoose.Schema({
     }],
     avatar: {
         type: String,
-        default: 'default-avatar.jpg'
+        default: 'https://via.placeholder.com/150'
     },
     cart: [{
         product: {
