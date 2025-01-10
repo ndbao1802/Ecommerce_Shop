@@ -1,0 +1,301 @@
+<div class="container py-5">
+    <!-- Product Details -->
+    <div class="row mb-5">
+        <!-- Product Images -->
+        <div class="col-md-6">
+            <div class="card">
+                <img src="<%= product.images[0]?.url || '/images/default-product.jpg' %>" 
+                     class="card-img-top main-image" 
+                     alt="<%= product.name %>"
+                     style="height: 400px; object-fit: contain;">
+                
+                <!-- Thumbnail Images -->
+                <div class="card-body">
+                    <div class="d-flex gap-2 overflow-auto">
+                        <% product.images.forEach((image, index) => { %>
+                            <img src="<%= image.url %>" 
+                                 class="thumbnail <%= index === 0 ? 'active' : '' %>"
+                                 alt="Thumbnail"
+                                 style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
+                                 onclick="updateMainImage(this.src)">
+                        <% }); %>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Info -->
+        <div class="col-md-6">
+            <h2 class="mb-3"><%= product.name %></h2>
+            <div class="d-flex align-items-center mb-3">
+                <div class="me-3">
+                    <% for(let i = 1; i <= 5; i++) { %>
+                        <i class="bi bi-star<%= i <= product.averageRating ? '-fill' : '' %> text-warning"></i>
+                    <% } %>
+                    <span class="ms-2">(<%= product.reviews.length %> reviews)</span>
+                </div>
+                <div class="vr mx-3"></div>
+                <span class="text-muted">Brand: <%= product.brand %></span>
+            </div>
+            <h3 class="mb-4">$<%= product.price.toFixed(2) %></h3>
+            <p class="mb-4"><%= product.description %></p>
+            
+            <div class="d-flex gap-3 mb-4">
+                <input type="number" 
+                       class="form-control" 
+                       id="quantity" 
+                       value="1" 
+                       min="1" 
+                       max="<%= product.stock %>"
+                       style="width: 100px;">
+                <button class="btn btn-primary flex-grow-1" onclick="addToCart('<%= product._id %>')">
+                    Add to Cart
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h6>Product Details:</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li>Category: <%= product.category.name %></li>
+                        <li>Stock: <%= product.stock %> units</li>
+                        <li>Brand: <%= product.brand %></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reviews Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Customer Reviews</h5>
+                    <% if (locals.user) { %>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#reviewModal">
+                            Write a Review
+                        </button>
+                    <% } %>
+                </div>
+                <div class="card-body">
+                    <div id="reviewsList">
+                        <!-- Reviews will be loaded here -->
+                    </div>
+                    
+                    <!-- Reviews Pagination -->
+                    <div class="d-flex justify-content-center mt-4">
+                        <nav aria-label="Reviews pagination">
+                            <ul class="pagination" id="reviewsPagination"></ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3 class="mb-4">Related Products</h3>
+            <div class="row g-4">
+                <% relatedProducts.forEach(relatedProduct => { %>
+                    <div class="col-md-3">
+                        <div class="card h-100">
+                            <a href="/products/<%= relatedProduct._id %>" class="text-decoration-none">
+                                <img src="<%= relatedProduct.images[0]?.url || '/images/default-product.jpg' %>"
+                                     class="card-img-top"
+                                     alt="<%= relatedProduct.name %>"
+                                     style="height: 200px; object-fit: cover;">
+                            </a>
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <a href="/products/<%= relatedProduct._id %>" class="text-decoration-none text-dark">
+                                        <%= relatedProduct.name %>
+                                    </a>
+                                </h5>
+                                <p class="card-text text-muted">
+                                    $<%= relatedProduct.price.toFixed(2) %>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Review Modal -->
+<% if (locals.user) { %>
+<div class="modal fade" id="reviewModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Write a Review</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reviewForm">
+                    <div class="mb-3">
+                        <label class="form-label">Rating</label>
+                        <div class="rating">
+                            <% for(let i = 5; i >= 1; i--) { %>
+                                <input type="radio" name="rating" value="<%= i %>" id="star<%= i %>">
+                                <label for="star<%= i %>"><i class="bi bi-star-fill"></i></label>
+                            <% } %>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Comment</label>
+                        <textarea class="form-control" name="comment" rows="3" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="submitReview()">Submit Review</button>
+            </div>
+        </div>
+    </div>
+</div>
+<% } %>
+
+<style>
+.thumbnail {
+    border: 2px solid transparent;
+    border-radius: 4px;
+    transition: border-color 0.2s;
+}
+
+.thumbnail.active,
+.thumbnail:hover {
+    border-color: #0d6efd;
+}
+
+.rating {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+
+.rating input {
+    display: none;
+}
+
+.rating label {
+    cursor: pointer;
+    color: #ddd;
+    font-size: 1.5rem;
+    padding: 0 0.1em;
+}
+
+.rating input:checked ~ label,
+.rating label:hover,
+.rating label:hover ~ label {
+    color: #ffd700;
+}
+</style>
+
+<script>
+// Image Gallery
+function updateMainImage(src) {
+    document.querySelector('.main-image').src = src;
+    document.querySelectorAll('.thumbnail').forEach(thumb => {
+        thumb.classList.remove('active');
+        if (thumb.src === src) thumb.classList.add('active');
+    });
+}
+
+// Reviews Handling
+let currentPage = 1;
+const reviewsPerPage = 5;
+
+async function loadReviews(page = 1) {
+    try {
+        const response = await fetch(`/products/<%= product._id %>/reviews?page=${page}&limit=${reviewsPerPage}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        const data = await response.json();
+        
+        updateReviewsList(data.reviews);
+        updateReviewsPagination(data.pagination);
+    } catch (error) {
+        console.error('Error loading reviews:', error);
+    }
+}
+
+function updateReviewsList(reviews) {
+    const reviewsList = document.getElementById('reviewsList');
+    reviewsList.innerHTML = reviews.map(review => `
+        <div class="border-bottom mb-3 pb-3">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <strong>${review.user.name}</strong>
+                    <div class="text-warning">
+                        ${Array(5).fill().map((_, i) => 
+                            `<i class="bi bi-star${i < review.rating ? '-fill' : ''}"></i>`
+                        ).join('')}
+                    </div>
+                </div>
+                <small class="text-muted">
+                    ${new Date(review.createdAt).toLocaleDateString()}
+                </small>
+            </div>
+            <p class="mt-2 mb-0">${review.comment}</p>
+        </div>
+    `).join('') || '<p class="text-center">No reviews yet</p>';
+}
+
+function updateReviewsPagination(pagination) {
+    const { page, pages } = pagination;
+    const paginationElement = document.getElementById('reviewsPagination');
+    
+    let paginationHTML = '';
+    for (let i = 1; i <= pages; i++) {
+        paginationHTML += `
+            <li class="page-item ${page === i ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="loadReviews(${i}); return false;">
+                    ${i}
+                </a>
+            </li>
+        `;
+    }
+    
+    paginationElement.innerHTML = paginationHTML;
+}
+
+async function submitReview() {
+    const form = document.getElementById('reviewForm');
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch(`/products/<%= product._id %>/reviews`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(Object.fromEntries(formData))
+        });
+        
+        if (response.ok) {
+            $('#reviewModal').modal('hide');
+            form.reset();
+            loadReviews(1);
+        } else {
+            alert('Error submitting review');
+        }
+    } catch (error) {
+        console.error('Error submitting review:', error);
+        alert('Error submitting review');
+    }
+}
+
+// Load reviews on page load
+document.addEventListener('DOMContentLoaded', () => {
+    loadReviews(1);
+});
+</script> 
