@@ -1,6 +1,21 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+// Cart schema
+const cartItemSchema = new mongoose.Schema({
+    product: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product',
+        required: true
+    },
+    quantity: {
+        type: Number,
+        required: true,
+        min: 1,
+        default: 1
+    }
+}); // Enable _id for cart items (remove { _id: false })
+
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -42,15 +57,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: 'https://via.placeholder.com/150'
     },
-    cart: [{
-        product: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Product'
-        },
-        quantity: Number,
-        selectedSize: String,
-        selectedColor: String
-    }],
+    cart: [cartItemSchema],
     wishlist: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Product'
@@ -78,6 +85,74 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 // Check if user is admin
 userSchema.methods.isAdmin = function() {
     return this.role === 'admin';
+};
+
+// Calculate cart total
+userSchema.virtual('cartTotal').get(function() {
+    return this.cart.reduce((total, item) => {
+        if (item.product?.price) {
+            return total + (item.product.price * item.quantity);
+        }
+        return total;
+    }, 0);
+});
+
+// Cart methods
+userSchema.methods.addToCart = async function(productId, quantity = 1) {
+    const existingItem = this.cart.find(item => 
+        item.product.toString() === productId.toString()
+    );
+
+    if (existingItem) {
+        existingItem.quantity += quantity;
+    } else {
+        // Create new cart item with auto-generated _id
+        this.cart.push({ product: productId, quantity });
+    }
+
+    return this.save();
+};
+
+userSchema.methods.removeFromCart = async function(itemId) {
+    try {
+        console.log('Removing cart item with ID:', itemId);
+        
+        // Find and remove the specific cart item by its _id
+        const itemIndex = this.cart.findIndex(item => 
+            item._id.toString() === itemId
+        );
+
+        if (itemIndex > -1) {
+            // Remove the specific item
+            this.cart.splice(itemIndex, 1);
+            console.log('Item removed, new cart length:', this.cart.length);
+            await this.save();
+            return true;
+        }
+
+        console.log('Cart item not found');
+        return false;
+    } catch (error) {
+        console.error('Error in removeFromCart:', error);
+        throw error;
+    }
+};
+
+userSchema.methods.updateCartQuantity = async function(productId, quantity) {
+    const item = this.cart.find(item => 
+        item.product.toString() === productId.toString()
+    );
+
+    if (!item) return false;
+
+    item.quantity = quantity;
+    await this.save();
+    return true;
+};
+
+userSchema.methods.clearCart = async function() {
+    this.cart = [];
+    return this.save();
 };
 
 module.exports = mongoose.model('User', userSchema);

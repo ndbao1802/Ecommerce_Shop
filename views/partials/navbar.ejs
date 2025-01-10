@@ -23,26 +23,51 @@
                     <a class="nav-link" href="/featured">Featured</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/pages">Pages</a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link" href="/about">About</a>
                 </li>
             </ul>
 
             <!-- Right Side Icons -->
             <div class="d-flex align-items-center">
-                <a href="/search" class="nav-icon">
-                    <i class="bi bi-search"></i>
-                </a>
-                <a href="/cart" class="nav-icon">
-                    <i class="bi bi-cart3"></i>
-                </a>
-                <a href="/account" class="nav-icon">
+                <!-- Search Form -->
+                <form class="search-form d-flex me-3" onsubmit="handleSearch(event)">
+                    <div class="input-group">
+                        <input type="search" 
+                               class="form-control" 
+                               placeholder="Search products..." 
+                               name="search"
+                               aria-label="Search">
+                        <button class="btn btn-outline-light" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Cart -->
+                <div class="dropdown">
+                    <button type="button" 
+                            class="nav-icon position-relative dropdown-toggle border-0 bg-transparent">
+                        <i class="bi bi-cart3"></i>
+                        <% if (locals.user) { %>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger cart-count"
+                                  style="display: <%= user.cart.length ? 'block' : 'none' %>">
+                                <%= user.cart.length %>
+                            </span>
+                        <% } %>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end cart-dropdown" style="width: 320px;">
+                        <div class="p-3">
+                            <h6 class="mb-3">Shopping Cart</h6>
+                            <div class="cart-items">
+                                <!-- Cart items will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Account -->
+                <a href="<%= locals.user ? '/account' : '/users/login' %>" class="nav-icon ms-3">
                     <i class="bi bi-person"></i>
-                </a>
-                <a href="#" class="nav-icon">
-                    <i class="bi bi-twitter"></i>
                 </a>
             </div>
         </div>
@@ -95,4 +120,61 @@
         justify-content: center;
     }
 }
-</style> 
+
+.cart-dropdown {
+    padding: 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.cart-item-dropdown {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.cart-item-dropdown:last-child {
+    border-bottom: none;
+}
+
+.search-form .input-group {
+    width: 300px;
+}
+
+.search-form input {
+    background-color: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+.search-form input::placeholder {
+    color: rgba(255,255,255,0.6);
+}
+
+.search-form input:focus {
+    background-color: #fff;
+    color: #000;
+}
+
+.search-form .btn-outline-light:hover {
+    background-color: rgba(255,255,255,0.1);
+}
+
+@media (max-width: 991.98px) {
+    .search-form .input-group {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+    // Only keep the search functionality
+    function handleSearch(e) {
+        e.preventDefault();
+        const searchInput = e.target.querySelector('input[name="search"]');
+        const searchTerm = searchInput.value.trim();
+        
+        if (searchTerm) {
+            window.location.href = `/products?search=${encodeURIComponent(searchTerm)}`;
+        }
+    }
+</script> 

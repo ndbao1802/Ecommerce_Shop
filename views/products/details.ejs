@@ -48,8 +48,9 @@
                        min="1" 
                        max="<%= product.stock %>"
                        style="width: 100px;">
-                <button class="btn btn-primary flex-grow-1" onclick="addToCart('<%= product._id %>')">
-                    Add to Cart
+                <button class="btn btn-primary flex-grow-1 add-to-cart" 
+                        data-product-id="<%= product._id.toString() %>">
+                    <i class="bi bi-cart-plus"></i> Add to Cart
                 </button>
             </div>
 
@@ -95,35 +96,30 @@
     </div>
 
     <!-- Related Products -->
-    <div class="row mt-5">
-        <div class="col-12">
+    <% if (relatedProducts && relatedProducts.length > 0) { %>
+        <div class="mb-5">
             <h3 class="mb-4">Related Products</h3>
             <div class="row g-4">
                 <% relatedProducts.forEach(relatedProduct => { %>
                     <div class="col-md-3">
                         <div class="card h-100">
                             <a href="/products/<%= relatedProduct._id %>" class="text-decoration-none">
-                                <img src="<%= relatedProduct.images[0]?.url || '/images/default-product.jpg' %>"
-                                     class="card-img-top"
+                                <img src="<%= relatedProduct.images[0]?.url || '/images/default-product.jpg' %>" 
+                                     class="card-img-top" 
                                      alt="<%= relatedProduct.name %>"
-                                     style="height: 200px; object-fit: cover;">
+                                     style="height: 200px; object-fit: contain;">
+                                <div class="card-body">
+                                    <h5 class="card-title text-dark"><%= relatedProduct.name %></h5>
+                                    <p class="card-text text-muted mb-2"><%= relatedProduct.brand %></p>
+                                    <h6 class="mb-0 text-primary">$<%= relatedProduct.price.toFixed(2) %></h6>
+                                </div>
                             </a>
-                            <div class="card-body">
-                                <h5 class="card-title">
-                                    <a href="/products/<%= relatedProduct._id %>" class="text-decoration-none text-dark">
-                                        <%= relatedProduct.name %>
-                                    </a>
-                                </h5>
-                                <p class="card-text text-muted">
-                                    $<%= relatedProduct.price.toFixed(2) %>
-                                </p>
-                            </div>
                         </div>
                     </div>
                 <% }); %>
             </div>
         </div>
-    </div>
+    <% } %>
 </div>
 
 <!-- Review Modal -->
@@ -221,8 +217,8 @@ async function loadReviews(page = 1) {
         const data = await response.json();
         
         if (response.ok) {
-            updateReviewsList(data.reviews);
-            updateReviewsPagination(data.pagination);
+            updateReviewsList(data.reviews || []);
+            updateReviewsPagination(data.pagination || {});
             
             // Update average rating display
             if (data.ratings) {
@@ -230,22 +226,26 @@ async function loadReviews(page = 1) {
             }
         } else {
             console.error('Error loading reviews:', data.error);
+            showAlert(data.error || 'Error loading reviews', 'danger');
         }
     } catch (error) {
         console.error('Error loading reviews:', error);
+        showAlert('Error loading reviews', 'danger');
     }
 }
 
-function updateReviewsList(reviews) {
+function updateReviewsList(reviews = []) {
     const reviewsList = document.getElementById('reviewsList');
-    reviewsList.innerHTML = reviews.map(review => `
+    if (!reviewsList) return;
+
+    reviewsList.innerHTML = reviews.length ? reviews.map(review => `
         <div class="border-bottom mb-3 pb-3">
             <div class="d-flex justify-content-between">
                 <div>
-                    <strong>${review.user.name}</strong>
+                    <strong>${review.user?.name || 'Anonymous'}</strong>
                     <div class="text-warning">
                         ${Array(5).fill().map((_, i) => 
-                            `<i class="bi bi-star${i < review.rating ? '-fill' : ''}"></i>`
+                            `<i class="bi bi-star${i < (review.rating || 0) ? '-fill' : ''}"></i>`
                         ).join('')}
                     </div>
                 </div>
@@ -253,24 +253,29 @@ function updateReviewsList(reviews) {
                     ${new Date(review.createdAt).toLocaleDateString()}
                 </small>
             </div>
-            <p class="mt-2 mb-0">${review.comment}</p>
+            <p class="mt-2 mb-0">${review.comment || ''}</p>
         </div>
-    `).join('') || '<p class="text-center">No reviews yet</p>';
+    `).join('') : '<p class="text-center">No reviews yet</p>';
 }
 
-function updateReviewsPagination(pagination) {
-    const { page, pages } = pagination;
+function updateReviewsPagination(pagination = {}) {
+    const page = pagination.page || 1;
+    const pages = pagination.pages || 1;
     const paginationElement = document.getElementById('reviewsPagination');
     
+    if (!paginationElement) return;
+    
     let paginationHTML = '';
-    for (let i = 1; i <= pages; i++) {
-        paginationHTML += `
-            <li class="page-item ${page === i ? 'active' : ''}">
-                <a class="page-link" href="#" onclick="loadReviews(${i}); return false;">
-                    ${i}
-                </a>
-            </li>
-        `;
+    if (pages > 1) {
+        for (let i = 1; i <= pages; i++) {
+            paginationHTML += `
+                <li class="page-item ${page === i ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="loadReviews(${i}); return false;">
+                        ${i}
+                    </a>
+                </li>
+            `;
+        }
     }
     
     paginationElement.innerHTML = paginationHTML;
@@ -352,5 +357,80 @@ function updateRatingDisplay(ratings) {
     if (reviewCount) {
         reviewCount.textContent = `(${totalReviews} reviews)`;
     }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const addToCartBtn = document.querySelector('.add-to-cart');
+    const quantityInput = document.getElementById('quantity');
+
+    addToCartBtn.addEventListener('click', async function() {
+        if (!window.user) {
+            sessionStorage.setItem('redirectAfterLogin', window.location.href);
+            window.location.href = '/users/login';
+            return;
+        }
+
+        const productId = this.dataset.productId;
+        const quantity = parseInt(quantityInput.value) || 1;
+
+        try {
+            this.disabled = true;
+            
+            const response = await fetch('/cart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    productId,
+                    quantity
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Update cart count in navbar
+                const cartCount = document.querySelector('.cart-count');
+                if (cartCount) {
+                    cartCount.textContent = data.cart.items.length;
+                    cartCount.style.display = 'block';
+                }
+
+                // Update cart dropdown content
+                const cartItems = document.querySelector('.cart-items');
+                if (cartItems && window.updateCartDisplay) {
+                    window.updateCartDisplay(data.cart);
+                }
+
+                showAlert('Product added to cart!', 'success');
+            } else {
+                showAlert(data.error || 'Error adding to cart', 'danger');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error adding to cart', 'danger');
+        } finally {
+            this.disabled = false;
+        }
+    });
+});
+
+// Helper function to show alerts
+function showAlert(message, type = 'success') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+    alertDiv.style.zIndex = '1050';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    document.body.appendChild(alertDiv);
+
+    // Remove alert after 3 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
 }
 </script> 

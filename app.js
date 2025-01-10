@@ -15,6 +15,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const cartRoutes = require('./routes/cartRoutes');
 const pageRoutes = require('./routes/pageRoutes');
+const cartMiddleware = require('./middleware/cartMiddleware');
 
 const app = express();
 
@@ -76,6 +77,39 @@ app.use((req, res, next) => {
     next();
 });
 
+// Add this before your routes
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`, {
+        body: req.body,
+        user: req.user ? req.user._id : null
+    });
+    next();
+});
+
+// Move cartMiddleware before routes
+app.use(cartMiddleware);
+
+// Move this middleware before your routes
+app.use(async (req, res, next) => {
+    if (req.user) {
+        try {
+            // Populate user cart
+            await req.user.populate({
+                path: 'cart.product',
+                select: 'name price images'
+            });
+
+            // Clean up cart by removing items with invalid products
+            req.user.cart = req.user.cart.filter(item => item.product);
+            await req.user.save();
+
+        } catch (error) {
+            console.error('Error populating cart:', error);
+        }
+    }
+    next();
+});
+
 // Routes
 app.get('/', homeController.getHome);
 app.use('/users', userRoutes);
@@ -83,6 +117,17 @@ app.use('/products', productRoutes);
 app.use('/admin', adminRoutes);
 app.use('/cart', cartRoutes);
 app.use('/', pageRoutes);
+
+// Add request logging middleware
+app.use((req, res, next) => {
+    console.log('Request:', {
+        method: req.method,
+        path: req.path,
+        body: req.body,
+        user: req.user ? req.user._id : 'Not logged in'
+    });
+    next();
+});
 
 // Add error handling middleware
 app.use(errorHandler);
