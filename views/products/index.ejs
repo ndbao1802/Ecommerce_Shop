@@ -1,13 +1,32 @@
 <%- include('../partials/header') %>
 
 <div class="container py-5">
+    <!-- Add search form before the row -->
+    <form action="/products" method="GET" class="mb-4">
+        <div class="input-group">
+            <input type="text" 
+                   class="form-control" 
+                   placeholder="Search products..." 
+                   name="search"
+                   value="<%= filters.search || '' %>">
+            <button class="btn btn-primary" type="submit">
+                <i class="bi bi-search"></i> Search
+            </button>
+        </div>
+    </form>
+
     <div class="row">
         <!-- Filters Sidebar -->
         <div class="col-lg-3">
             <div class="card mb-4">
                 <div class="card-body">
                     <h5 class="card-title mb-4">Filters</h5>
-                    <form id="filterForm">
+                    <form action="/products" method="GET">
+                        <!-- Preserve search query if exists -->
+                        <% if (filters.search) { %>
+                            <input type="hidden" name="search" value="<%= filters.search %>">
+                        <% } %>
+
                         <!-- Categories -->
                         <div class="mb-3">
                             <label class="form-label">Categories</label>
@@ -16,7 +35,9 @@
                                     <input class="form-check-input" type="checkbox" 
                                            name="category" value="<%= category._id %>"
                                            id="category<%= category._id %>"
-                                           <%= filters.category === category._id.toString() ? 'checked' : '' %>>
+                                           <%= (filters.category && (Array.isArray(filters.category) 
+                                                ? filters.category.includes(category._id.toString()) 
+                                                : filters.category === category._id.toString())) ? 'checked' : '' %>>
                                     <label class="form-check-label" for="category<%= category._id %>">
                                         <%= category.name %>
                                     </label>
@@ -32,7 +53,9 @@
                                     <input class="form-check-input" type="checkbox" 
                                            name="brand" value="<%= brand %>"
                                            id="brand<%= brand %>"
-                                           <%= filters.brand === brand ? 'checked' : '' %>>
+                                           <%= (filters.brand && (Array.isArray(filters.brand) 
+                                                ? filters.brand.includes(brand) 
+                                                : filters.brand === brand)) ? 'checked' : '' %>>
                                     <label class="form-check-label" for="brand<%= brand %>">
                                         <%= brand %>
                                     </label>
@@ -71,36 +94,54 @@
 
         <!-- Products Grid -->
         <div class="col-lg-9">
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                <% products.forEach(product => { %>
-                    <div class="col">
-                        <div class="card h-100">
-                            <img src="<%= product.images[0]?.url || '/images/default-product.jpg' %>" 
-                                 class="card-img-top" 
-                                 alt="<%= product.name %>"
-                                 style="height: 200px; object-fit: contain;">
-                            <div class="card-body">
-                                <h5 class="card-title"><%= product.name %></h5>
-                                <p class="card-text text-muted mb-2"><%= product.brand %></p>
-                                <h6 class="mb-3">$<%= product.price.toFixed(2) %></h6>
-                                <a href="/products/<%= product._id %>" class="btn btn-primary w-100">View Details</a>
+            <% if (products.length > 0) { %>
+                <!-- Show results count if there's a search -->
+                <% if (filters.search) { %>
+                    <p class="mb-4">Found <%= pagination.total %> results for "<%= filters.search %>"</p>
+                <% } %>
+
+                <div class="row row-cols-1 row-cols-md-3 g-4">
+                    <% products.forEach(product => { %>
+                        <div class="col">
+                            <div class="card h-100">
+                                <img src="<%= product.images[0]?.url || '/images/default-product.jpg' %>" 
+                                     class="card-img-top" 
+                                     alt="<%= product.name %>"
+                                     style="height: 200px; object-fit: contain;">
+                                <div class="card-body">
+                                    <h5 class="card-title"><%= product.name %></h5>
+                                    <p class="card-text text-muted mb-2"><%= product.brand %></p>
+                                    <h6 class="mb-3">$<%= product.price.toFixed(2) %></h6>
+                                    <a href="/products/<%= product._id %>" class="btn btn-primary w-100">View Details</a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                <% }); %>
-            </div>
+                    <% }); %>
+                </div>
 
-            <!-- Pagination -->
-            <% if (pagination.pages > 1) { %>
-                <nav class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        <% for(let i = 1; i <= pagination.pages; i++) { %>
-                            <li class="page-item <%= pagination.page === i ? 'active' : '' %>">
-                                <a class="page-link" href="?page=<%= i %>"><%= i %></a>
-                            </li>
-                        <% } %>
-                    </ul>
-                </nav>
+                <!-- Pagination -->
+                <% if (pagination.pages > 1) { %>
+                    <nav class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <% for(let i = 1; i <= pagination.pages; i++) { %>
+                                <li class="page-item <%= pagination.page === i ? 'active' : '' %>">
+                                    <a class="page-link" href="<%= getPageUrl(i) %>"><%= i %></a>
+                                </li>
+                            <% } %>
+                        </ul>
+                    </nav>
+                <% } %>
+            <% } else { %>
+                <div class="text-center py-5">
+                    <i class="bi bi-search display-1 text-muted mb-4"></i>
+                    <h3>No products found</h3>
+                    <% if (Object.keys(filters).length > 0) { %>
+                        <p class="text-muted">Try adjusting your search or filter criteria</p>
+                        <a href="/products" class="btn btn-outline-primary mt-3">Clear all filters</a>
+                    <% } else { %>
+                        <p class="text-muted">No products are available at the moment.</p>
+                    <% } %>
+                </div>
             <% } %>
         </div>
     </div>

@@ -17,19 +17,82 @@ const productController = {
                 const searchRegex = new RegExp(req.query.search, 'i');
                 query.$or = [
                     { name: searchRegex },
-                    { description: searchRegex },
-                    { brand: searchRegex }
+                    { description: searchRegex }
                 ];
             }
 
-            // Category filter
+            // Category filter - handle multiple categories as AND
             if (req.query.category) {
-                query.category = req.query.category;
+                const categories = Array.isArray(req.query.category) 
+                    ? req.query.category 
+                    : [req.query.category];
+                
+                // If multiple categories are selected, no product can match (since a product can't be in multiple categories)
+                if (categories.length > 1) {
+                    // Get all necessary data for filters
+                    const allCategories = await Category.find();
+                    const allBrands = await Product.distinct('brand');
+                    const highestPriceProduct = await Product.findOne()
+                        .sort({ price: -1 })
+                        .select('price');
+                    const maxPrice = Math.ceil(highestPriceProduct?.price || 1000);
+
+                    // Return empty results but preserve filter state
+                    return res.render('products/index', {
+                        products: [],
+                        categories: allCategories,
+                        brands: allBrands,
+                        filters: {
+                            ...req.query,
+                            category: categories  // Preserve selected categories
+                        },
+                        pagination: {
+                            page: 1,
+                            pages: 0,
+                            total: 0
+                        },
+                        maxPrice
+                    });
+                }
+                
+                // Single category filter
+                query.category = categories[0];
             }
 
-            // Brand filter
+            // Brand filter - handle multiple brands as AND (no product can have multiple brands)
             if (req.query.brand) {
-                query.brand = req.query.brand;
+                const brands = Array.isArray(req.query.brand) 
+                    ? req.query.brand 
+                    : [req.query.brand];
+                
+                if (brands.length > 1) {
+                    // Get all necessary data for filters
+                    const categories = await Category.find();
+                    const allBrands = await Product.distinct('brand');
+                    const highestPriceProduct = await Product.findOne()
+                        .sort({ price: -1 })
+                        .select('price');
+                    const maxPrice = Math.ceil(highestPriceProduct?.price || 1000);
+
+                    // Return empty results but preserve filter state
+                    return res.render('products/index', {
+                        products: [],
+                        categories,
+                        brands: allBrands,
+                        filters: {
+                            ...req.query,
+                            brand: brands
+                        },
+                        pagination: {
+                            page: 1,
+                            pages: 0,
+                            total: 0
+                        },
+                        maxPrice
+                    });
+                }
+                
+                query.brand = brands[0];
             }
 
             // Price range filter
