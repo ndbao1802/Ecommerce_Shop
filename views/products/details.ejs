@@ -220,8 +220,17 @@ async function loadReviews(page = 1) {
         });
         const data = await response.json();
         
-        updateReviewsList(data.reviews);
-        updateReviewsPagination(data.pagination);
+        if (response.ok) {
+            updateReviewsList(data.reviews);
+            updateReviewsPagination(data.pagination);
+            
+            // Update average rating display
+            if (data.ratings) {
+                updateRatingDisplay(data.ratings);
+            }
+        } else {
+            console.error('Error loading reviews:', data.error);
+        }
     } catch (error) {
         console.error('Error loading reviews:', error);
     }
@@ -270,7 +279,19 @@ function updateReviewsPagination(pagination) {
 async function submitReview() {
     const form = document.getElementById('reviewForm');
     const formData = new FormData(form);
-    
+    const rating = formData.get('rating');
+    const comment = formData.get('comment');
+
+    // Validate input
+    if (!rating) {
+        alert('Please select a rating');
+        return;
+    }
+    if (!comment) {
+        alert('Please write a comment');
+        return;
+    }
+
     try {
         const response = await fetch(`/products/<%= product._id %>/reviews`, {
             method: 'POST',
@@ -278,15 +299,29 @@ async function submitReview() {
                 'Content-Type': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: JSON.stringify(Object.fromEntries(formData))
+            body: JSON.stringify({
+                rating: parseInt(rating),
+                comment: comment
+            })
         });
+
+        const data = await response.json();
         
         if (response.ok) {
-            $('#reviewModal').modal('hide');
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('reviewModal'));
+            modal.hide();
+            
+            // Reset form
             form.reset();
+            
+            // Reload reviews
             loadReviews(1);
+            
+            // Show success message
+            alert('Review submitted successfully!');
         } else {
-            alert('Error submitting review');
+            alert(data.error || 'Error submitting review');
         }
     } catch (error) {
         console.error('Error submitting review:', error);
@@ -298,4 +333,24 @@ async function submitReview() {
 document.addEventListener('DOMContentLoaded', () => {
     loadReviews(1);
 });
+
+// Add function to update rating display
+function updateRatingDisplay(ratings) {
+    const averageRating = ratings.average.toFixed(1);
+    const totalReviews = ratings.total;
+    
+    // Update stars
+    const starsContainer = document.querySelector('.rating-stars');
+    if (starsContainer) {
+        starsContainer.innerHTML = Array(5).fill()
+            .map((_, i) => `<i class="bi bi-star${i < Math.round(averageRating) ? '-fill' : ''} text-warning"></i>`)
+            .join('');
+    }
+    
+    // Update review count
+    const reviewCount = document.querySelector('.review-count');
+    if (reviewCount) {
+        reviewCount.textContent = `(${totalReviews} reviews)`;
+    }
+}
 </script> 

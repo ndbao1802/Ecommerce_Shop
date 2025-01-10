@@ -151,35 +151,60 @@ const productController = {
     // Add these new methods
     addReview: async (req, res) => {
         try {
+            // Check if user is logged in
+            if (!req.user) {
+                return res.status(401).json({ error: 'You must be logged in to review' });
+            }
+
             const { rating, comment } = req.body;
+
+            // Validate input
+            if (!rating || !comment) {
+                return res.status(400).json({ error: 'Rating and comment are required' });
+            }
+
+            if (rating < 1 || rating > 5) {
+                return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+            }
+
             const product = await Product.findById(req.params.id);
 
             if (!product) {
                 return res.status(404).json({ error: 'Product not found' });
             }
 
-            const review = {
-                user: req.user._id,
-                rating: parseInt(rating),
-                comment
-            };
+            try {
+                // Add review using the schema method
+                await product.addReview(req.user._id, parseInt(rating), comment);
 
-            product.reviews.push(review);
-            product.calculateAverageRating();
-            await product.save();
+                // Get updated product with populated reviews
+                const updatedProduct = await Product.findById(product._id)
+                    .populate('reviews.user', 'name');
 
-            if (req.xhr) {
-                return res.json({ success: true });
+                if (req.xhr) {
+                    return res.json({
+                        success: true,
+                        reviews: updatedProduct.reviews,
+                        ratings: updatedProduct.ratings
+                    });
+                }
+
+                req.flash('success_msg', 'Review added successfully');
+                res.redirect(`/products/${req.params.id}`);
+            } catch (error) {
+                if (error.message.includes('already reviewed')) {
+                    return res.status(400).json({ error: 'You have already reviewed this product' });
+                }
+                throw error;
             }
-
-            req.flash('success_msg', 'Review added successfully');
-            res.redirect(`/products/${req.params.id}`);
         } catch (error) {
             console.error('Error adding review:', error);
             if (req.xhr) {
-                return res.status(500).json({ error: 'Error adding review' });
+                return res.status(500).json({ 
+                    error: error.message || 'Error adding review'
+                });
             }
-            req.flash('error_msg', 'Error adding review');
+            req.flash('error_msg', error.message || 'Error adding review');
             res.redirect(`/products/${req.params.id}`);
         }
     },
@@ -195,17 +220,20 @@ const productController = {
                     path: 'reviews.user',
                     select: 'name'
                 })
-                .slice('reviews', [skip, limit]);
+                .select('reviews ratings');
 
             if (!product) {
                 return res.status(404).json({ error: 'Product not found' });
             }
 
+            // Get paginated reviews
+            const reviews = product.reviews.slice(skip, skip + limit);
             const total = product.reviews.length;
 
             if (req.xhr) {
                 return res.json({
-                    reviews: product.reviews,
+                    reviews,
+                    ratings: product.ratings,
                     pagination: {
                         page,
                         limit,
@@ -216,7 +244,8 @@ const productController = {
             }
 
             res.render('products/reviews', {
-                reviews: product.reviews,
+                reviews,
+                ratings: product.ratings,
                 productId: req.params.id,
                 pagination: {
                     page,

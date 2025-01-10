@@ -5,6 +5,30 @@ const slugify = require('slugify');
 mongoose.models = {};
 mongoose.modelSchemas = {};
 
+// Create Review Schema
+const reviewSchema = new mongoose.Schema({
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    rating: {
+        type: Number,
+        required: true,
+        min: 1,
+        max: 5
+    },
+    comment: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+
 const productSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -24,7 +48,7 @@ const productSchema = new mongoose.Schema({
         ref: 'Category',
         required: true
     },
-    manufacturer: {
+    brand: {
         type: String,
         required: true
     },
@@ -37,26 +61,25 @@ const productSchema = new mongoose.Schema({
         url: String,
         public_id: String
     }],
-    reviews: [{
-        user: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        rating: {
+    reviews: [reviewSchema],
+    ratings: {
+        average: {
             type: Number,
-            required: true,
-            min: 1,
+            default: 0,
+            min: 0,
             max: 5
         },
-        comment: String,
-        createdAt: {
-            type: Date,
-            default: Date.now
+        total: {
+            type: Number,
+            default: 0
+        },
+        distribution: {
+            1: { type: Number, default: 0 },
+            2: { type: Number, default: 0 },
+            3: { type: Number, default: 0 },
+            4: { type: Number, default: 0 },
+            5: { type: Number, default: 0 }
         }
-    }],
-    averageRating: {
-        type: Number,
-        default: 0
     },
     isActive: {
         type: Boolean,
@@ -83,27 +106,69 @@ productSchema.pre('save', function(next) {
     next();
 });
 
-// Also handle slug generation on update
-productSchema.pre('findOneAndUpdate', function(next) {
-    const update = this.getUpdate();
-    if (update.name) {
-        update.slug = slugify(update.name + '-' + Math.random().toString(36).substring(2, 8), {
-            lower: true,
-            strict: true
-        });
-    }
-    next();
-});
+// Method to add a review and update ratings
+productSchema.methods.addReview = async function(userId, rating, comment) {
+    // Check if user has already reviewed
+    const existingReview = this.reviews.find(review => 
+        review.user.toString() === userId.toString()
+    );
 
-// Calculate average rating
-productSchema.methods.calculateAverageRating = function() {
-    if (this.reviews.length === 0) {
-        this.averageRating = 0;
-    } else {
-        const sum = this.reviews.reduce((acc, review) => acc + review.rating, 0);
-        this.averageRating = sum / this.reviews.length;
+    if (existingReview) {
+        throw new Error('You have already reviewed this product');
     }
-    return this.averageRating;
+
+    // Add new review
+    this.reviews.push({
+        user: userId,
+        rating,
+        comment
+    });
+
+    // Update rating distribution
+    this.ratings.distribution[rating]++;
+    this.ratings.total++;
+
+    // Calculate new average
+    let sum = 0;
+    Object.entries(this.ratings.distribution).forEach(([rating, count]) => {
+        sum += rating * count;
+    });
+    this.ratings.average = sum / this.ratings.total;
+
+    return this.save();
+};
+
+// Method to remove a review
+productSchema.methods.removeReview = async function(userId) {
+    const reviewIndex = this.reviews.findIndex(review => 
+        review.user.toString() === userId.toString()
+    );
+
+    if (reviewIndex === -1) {
+        throw new Error('Review not found');
+    }
+
+    const rating = this.reviews[reviewIndex].rating;
+
+    // Update rating distribution
+    this.ratings.distribution[rating]--;
+    this.ratings.total--;
+
+    // Remove review
+    this.reviews.splice(reviewIndex, 1);
+
+    // Recalculate average if there are still reviews
+    if (this.ratings.total > 0) {
+        let sum = 0;
+        Object.entries(this.ratings.distribution).forEach(([rating, count]) => {
+            sum += rating * count;
+        });
+        this.ratings.average = sum / this.ratings.total;
+    } else {
+        this.ratings.average = 0;
+    }
+
+    return this.save();
 };
 
 // Create a new model instance
