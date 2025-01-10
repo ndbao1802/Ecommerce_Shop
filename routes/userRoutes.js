@@ -4,6 +4,8 @@ const userController = require('../controllers/userController');
 const { isAuth } = require('../middleware/auth');
 const User = require('../models/userModel');
 const passport = require('passport');
+const { uploadAvatar } = require('../config/cloudinary');
+const Order = require('../models/orderModel');
 
 // Auth routes
 router.get('/login', (req, res) => {
@@ -26,6 +28,18 @@ router.get('/logout', userController.logout);
 router.get('/profile', isAuth, userController.getProfile);
 router.put('/profile', isAuth, userController.updateProfile);
 router.put('/password', isAuth, userController.updatePassword);
+router.put('/profile/avatar', isAuth, (req, res, next) => {
+    uploadAvatar.single('avatar')(req, res, (err) => {
+        if (err) {
+            console.error('Upload error:', err);
+            return res.status(400).json({
+                success: false,
+                error: err.message || 'Error uploading file'
+            });
+        }
+        next();
+    });
+}, userController.updateAvatar);
 
 // Cart routes
 router.get('/cart', isAuth, userController.getCart);
@@ -165,6 +179,46 @@ router.post('/complete-setup', (req, res, next) => {
         res.render('users/google-setup', {
             error: 'Error completing setup. Please try again.'
         });
+    }
+});
+
+// Add these routes after your existing user routes
+router.get('/orders', isAuth, async (req, res) => {
+    try {
+        const orders = await Order.find({ user: req.user._id })
+            .sort({ createdAt: -1 })
+            .populate('items.product');
+
+        res.render('orders/list', {
+            title: 'My Orders',
+            orders
+        });
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+        req.flash('error_msg', 'Error loading orders');
+        res.redirect('/');
+    }
+});
+
+router.get('/orders/:orderId', isAuth, async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.orderId)
+            .populate('items.product')
+            .populate('user', 'name email');
+
+        if (!order || order.user._id.toString() !== req.user._id.toString()) {
+            req.flash('error_msg', 'Order not found');
+            return res.redirect('/users/orders');
+        }
+
+        res.render('orders/details', {
+            title: 'Order Details',
+            order
+        });
+    } catch (error) {
+        console.error('Error fetching order:', error);
+        req.flash('error_msg', 'Error loading order details');
+        res.redirect('/users/orders');
     }
 });
 

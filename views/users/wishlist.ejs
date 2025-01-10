@@ -1,0 +1,115 @@
+<div class="container my-5">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">My Wishlist</h4>
+            <a href="/products" class="btn btn-primary btn-sm">
+                <i class="bi bi-shop me-2"></i>Continue Shopping
+            </a>
+        </div>
+        <div class="card-body">
+            <% if (!wishlist || wishlist.length === 0) { %>
+                <div class="text-center py-5">
+                    <i class="bi bi-heart display-1 text-muted mb-3"></i>
+                    <h5>Your wishlist is empty</h5>
+                    <p class="text-muted">Save items you want to buy later!</p>
+                    <a href="/products" class="btn btn-primary">Browse Products</a>
+                </div>
+            <% } else { %>
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    <% wishlist.forEach(product => { %>
+                        <div class="col">
+                            <div class="card h-100 product-card">
+                                <img src="<%= product.images[0] %>" class="card-img-top" alt="<%= product.name %>">
+                                <div class="card-body">
+                                    <h5 class="card-title"><%= product.name %></h5>
+                                    <p class="card-text text-muted mb-2"><%= product.description.substring(0, 100) %>...</p>
+                                    <p class="card-text">
+                                        <strong class="text-primary">$<%= product.price.toFixed(2) %></strong>
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-transparent border-top-0">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <button class="btn btn-primary btn-sm" onclick="addToCart('<%= product._id %>')">
+                                            <i class="bi bi-cart-plus me-2"></i>Add to Cart
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm" onclick="removeFromWishlist('<%= product._id %>')">
+                                            <i class="bi bi-heart-fill"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<script>
+async function addToCart(productId) {
+    try {
+        const response = await fetch('/users/cart/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                productId,
+                quantity: 1
+            })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            alert('Product added to cart!');
+            // Optionally remove from wishlist after adding to cart
+            await removeFromWishlist(productId);
+        } else {
+            throw new Error(data.error || 'Error adding to cart');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error adding to cart');
+    }
+}
+
+async function removeFromWishlist(productId) {
+    if (!confirm('Remove this item from wishlist?')) return;
+
+    try {
+        const response = await fetch(`/users/wishlist/remove/${productId}`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            throw new Error(data.error || 'Error removing from wishlist');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error removing from wishlist');
+    }
+}
+</script>
+
+<style>
+.product-card {
+    transition: transform 0.2s;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+}
+
+.product-card .card-img-top {
+    height: 200px;
+    object-fit: cover;
+}
+
+.btn-outline-danger:hover {
+    transform: scale(1.1);
+}
+</style> 

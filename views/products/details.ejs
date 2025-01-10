@@ -52,6 +52,13 @@
                         data-product-id="<%= product._id.toString() %>">
                     <i class="bi bi-cart-plus"></i> Add to Cart
                 </button>
+                <% if (user) { %>
+                    <button class="btn btn-outline-danger ms-2" 
+                            onclick="toggleWishlist('<%= product._id %>')"
+                            id="wishlistBtn">
+                        <i class="bi <%= user.wishlist.includes(product._id) ? 'bi-heart-fill' : 'bi-heart' %>"></i>
+                    </button>
+                <% } %>
             </div>
 
             <div class="card">
@@ -432,5 +439,29 @@ function showAlert(message, type = 'success') {
     setTimeout(() => {
         alertDiv.remove();
     }, 3000);
+}
+
+async function toggleWishlist(productId) {
+    try {
+        const isInWishlist = document.querySelector('#wishlistBtn i').classList.contains('bi-heart-fill');
+        const method = isInWishlist ? 'DELETE' : 'POST';
+        const url = isInWishlist 
+            ? `/users/wishlist/remove/${productId}`
+            : `/users/wishlist/add/${productId}`;
+
+        const response = await fetch(url, { method });
+        const data = await response.json();
+
+        if (data.success) {
+            const icon = document.querySelector('#wishlistBtn i');
+            icon.classList.toggle('bi-heart');
+            icon.classList.toggle('bi-heart-fill');
+        } else {
+            throw new Error(data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error updating wishlist');
+    }
 }
 </script> 

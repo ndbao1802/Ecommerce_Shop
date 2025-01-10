@@ -106,42 +106,69 @@ const userController = {
     // Profile methods
     getProfile: async (req, res) => {
         try {
+            // Get user with populated data
             const user = await User.findById(req.user._id)
-                .select('-password');
-            res.json({
-                success: true,
-                user
+                .select('-password')
+                .populate('cart.product')
+                .populate('wishlist');
+            
+            res.render('users/profile', { 
+                title: 'My Profile',
+                user 
             });
         } catch (error) {
-            console.error('Profile error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error getting profile'
-            });
+            console.error('Error fetching profile:', error);
+            req.flash('error_msg', 'Error loading profile');
+            res.redirect('/');
         }
     },
 
     updateProfile: async (req, res) => {
         try {
             const { name, email, phone } = req.body;
-            const user = await User.findById(req.user._id);
 
-            user.name = name;
-            user.email = email;
-            user.phone = phone;
+            // Validate input
+            if (!name || !email || !phone) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'All fields are required'
+                });
+            }
 
-            await user.save();
+            // Check if email is taken (excluding current user)
+            const existingUser = await User.findOne({
+                email: email.toLowerCase(),
+                _id: { $ne: req.user._id }
+            });
+
+            if (existingUser) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Email is already taken'
+                });
+            }
+
+            // Update user
+            const updatedUser = await User.findByIdAndUpdate(
+                req.user._id,
+                {
+                    name,
+                    email: email.toLowerCase(),
+                    phone
+                },
+                { new: true }
+            );
 
             res.json({
                 success: true,
                 user: {
-                    name: user.name,
-                    email: user.email,
-                    phone: user.phone
+                    name: updatedUser.name,
+                    email: updatedUser.email,
+                    phone: updatedUser.phone
                 }
             });
         } catch (error) {
-            console.error('Update error:', error);
+            console.error('Profile update error:', error);
             res.status(500).json({
                 success: false,
                 error: 'Error updating profile'
@@ -152,6 +179,16 @@ const userController = {
     updatePassword: async (req, res) => {
         try {
             const { currentPassword, newPassword } = req.body;
+
+            // Validate input
+            if (!currentPassword || !newPassword) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'All fields are required'
+                });
+            }
+
+            // Get user with password
             const user = await User.findById(req.user._id);
 
             // Verify current password
@@ -163,15 +200,55 @@ const userController = {
                 });
             }
 
+            // Update password
             user.password = newPassword;
             await user.save();
 
-            res.json({ success: true });
+            res.json({
+                success: true,
+                message: 'Password updated successfully'
+            });
         } catch (error) {
             console.error('Password update error:', error);
             res.status(500).json({
                 success: false,
                 error: 'Error updating password'
+            });
+        }
+    },
+
+    updateAvatar: async (req, res) => {
+        try {
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'No image file provided'
+                });
+            }
+
+            // Update user with new avatar URL
+            const updatedUser = await User.findByIdAndUpdate(
+                req.user._id,
+                { avatar: req.file.path || req.file.location }, // Handle both path and location
+                { new: true }
+            );
+
+            if (!updatedUser) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'User not found'
+                });
+            }
+
+            res.json({
+                success: true,
+                avatar: updatedUser.avatar
+            });
+        } catch (error) {
+            console.error('Avatar update error:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message || 'Error updating avatar'
             });
         }
     },
@@ -244,30 +321,37 @@ const userController = {
     getWishlist: async (req, res) => {
         try {
             await req.user.populate('wishlist');
-            res.json({
-                success: true,
+            
+            res.render('users/wishlist', {
+                title: 'My Wishlist',
                 wishlist: req.user.wishlist
             });
         } catch (error) {
             console.error('Wishlist error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error getting wishlist'
-            });
+            req.flash('error_msg', 'Error loading wishlist');
+            res.redirect('/');
         }
     },
 
     addToWishlist: async (req, res) => {
         try {
-            const { productId } = req.params;
-            if (!req.user.wishlist.includes(productId)) {
-                req.user.wishlist.push(productId);
-                await req.user.save();
+            const productId = req.params.productId;
+            
+            // Check if product is already in wishlist
+            if (req.user.wishlist.includes(productId)) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Product is already in wishlist'
+                });
             }
-            await req.user.populate('wishlist');
+
+            // Add to wishlist
+            req.user.wishlist.push(productId);
+            await req.user.save();
+
             res.json({
                 success: true,
-                wishlist: req.user.wishlist
+                message: 'Product added to wishlist'
             });
         } catch (error) {
             console.error('Wishlist error:', error);

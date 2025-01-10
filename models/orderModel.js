@@ -1,21 +1,33 @@
 const mongoose = require('mongoose');
 
+const orderItemSchema = new mongoose.Schema({
+    product: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product',
+        required: true
+    },
+    quantity: {
+        type: Number,
+        required: true,
+        min: 1
+    },
+    price: {
+        type: Number,
+        required: true
+    }
+});
+
 const orderSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
-    items: [{
-        product: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Product'
-        },
-        quantity: Number,
-        price: Number,
-        selectedSize: String,
-        selectedColor: String
-    }],
+    items: [orderItemSchema],
+    totalAmount: {
+        type: Number,
+        required: true
+    },
     shippingAddress: {
         street: String,
         ward: String,
@@ -23,29 +35,22 @@ const orderSchema = new mongoose.Schema({
         city: String,
         phone: String
     },
+    status: {
+        type: String,
+        enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
+        default: 'pending'
+    },
     paymentMethod: {
         type: String,
-        enum: ['COD', 'Banking', 'Momo', 'ZaloPay'],
-        required: true
+        required: true,
+        enum: ['cod', 'bank_transfer']
     },
     paymentStatus: {
         type: String,
         enum: ['pending', 'paid', 'failed'],
         default: 'pending'
     },
-    orderStatus: {
-        type: String,
-        enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
-        default: 'pending'
-    },
-    totalAmount: Number,
-    shippingFee: Number,
-    discount: Number,
-    finalAmount: Number,
-    note: String,
-    trackingNumber: String,
-    cancelReason: String,
-    estimatedDeliveryDate: Date
+    trackingNumber: String
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', orderSchema); 

@@ -1,0 +1,105 @@
+<div class="container my-5">
+    <div class="row">
+        <!-- Order Info -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Order #<%= order._id %></h4>
+                    <span class="badge bg-<%= getStatusBadgeClass(order.status) %>">
+                        <%= order.status %>
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% order.items.forEach(item => { %>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <img src="<%= item.product.image %>" alt="<%= item.product.name %>" 
+                                                     style="width: 50px; height: 50px; object-fit: cover;" 
+                                                     class="me-2">
+                                                <%= item.product.name %>
+                                            </div>
+                                        </td>
+                                        <td>$<%= item.price.toFixed(2) %></td>
+                                        <td><%= item.quantity %></td>
+                                        <td>$<%= (item.price * item.quantity).toFixed(2) %></td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                                    <td><strong>$<%= order.totalAmount.toFixed(2) %></strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Details -->
+        <div class="col-md-4">
+            <!-- Shipping Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Shipping Information</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>Address:</strong></p>
+                    <p class="mb-3">
+                        <%= order.shippingAddress.street %><br>
+                        <%= order.shippingAddress.ward %>, <%= order.shippingAddress.district %><br>
+                        <%= order.shippingAddress.city %><br>
+                        Phone: <%= order.shippingAddress.phone %>
+                    </p>
+                    
+                    <% if (order.trackingNumber) { %>
+                        <p class="mb-1"><strong>Tracking Number:</strong></p>
+                        <p class="mb-0"><%= order.trackingNumber %></p>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Payment Info -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Payment Information</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>Method:</strong></p>
+                    <p class="mb-3"><%= order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Bank Transfer' %></p>
+                    
+                    <p class="mb-1"><strong>Status:</strong></p>
+                    <p class="mb-0">
+                        <span class="badge bg-<%= order.paymentStatus === 'paid' ? 'success' : 'warning' %>">
+                            <%= order.paymentStatus %>
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<% function getStatusBadgeClass(status) {
+    switch(status) {
+        case 'pending': return 'warning';
+        case 'processing': return 'info';
+        case 'shipped': return 'primary';
+        case 'delivered': return 'success';
+        case 'cancelled': return 'danger';
+        default: return 'secondary';
+    }
+} %> 

@@ -16,6 +16,7 @@ const errorHandler = require('./middleware/errorHandler');
 const cartRoutes = require('./routes/cartRoutes');
 const pageRoutes = require('./routes/pageRoutes');
 const cartMiddleware = require('./middleware/cartMiddleware');
+const orderRoutes = require('./routes/orderRoutes');
 
 const app = express();
 
@@ -126,6 +127,7 @@ app.use('/products', productRoutes);
 app.use('/admin', adminRoutes);
 app.use('/cart', cartRoutes);
 app.use('/', pageRoutes);
+app.use('/orders', orderRoutes);
 
 // Add request logging middleware
 app.use((req, res, next) => {

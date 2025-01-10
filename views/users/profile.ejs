@@ -77,13 +77,17 @@
                         <div class="card-header">
                             <h5 class="mb-0">Update Profile Picture</h5>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body text-center">
+                            <img src="<%= user.avatar %>" alt="Current Avatar" class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
                             <form id="avatar-form" enctype="multipart/form-data">
                                 <div class="mb-3">
-                                    <label for="avatar" class="form-label">Choose Image</label>
+                                    <label for="avatar" class="form-label">Choose New Image</label>
                                     <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*" required>
+                                    <div class="form-text">Maximum file size: 5MB. Supported formats: JPG, PNG</div>
                                 </div>
-                                <button type="submit" class="btn btn-primary">Upload Avatar</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-cloud-upload me-2"></i>Upload New Avatar
+                                </button>
                             </form>
                         </div>
                     </div>

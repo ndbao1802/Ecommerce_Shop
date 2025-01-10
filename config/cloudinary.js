@@ -1,32 +1,45 @@
 const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const multer = require('multer');
 
+// Configure cloudinary
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-    secure: true
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Add a helper function for optimized upload
-const uploadToCloudinary = async (file, folder = 'ecommerce') => {
-    try {
-        const result = await cloudinary.uploader.upload(file, {
-            folder: folder,
-            resource_type: 'auto',
-            transformation: [
-                { width: 1000, height: 1000, crop: 'limit' },
-                { quality: 'auto' },
-                { fetch_format: 'auto' }
-            ]
-        });
+// Create storage engine
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: async (req, file) => {
         return {
-            url: result.secure_url,
-            public_id: result.public_id
+            folder: 'avatars',
+            allowed_formats: ['jpg', 'jpeg', 'png'],
+            public_id: `avatar-${Date.now()}`,
+            transformation: [{ width: 500, height: 500, crop: 'fill' }],
+            format: 'jpg'
         };
-    } catch (error) {
-        console.error('Cloudinary upload error:', error);
-        throw error;
     }
-};
+});
 
-module.exports = { cloudinary, uploadToCloudinary }; 
+// Create multer upload middleware
+const uploadAvatar = multer({ 
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    },
+    fileFilter: (req, file, cb) => {
+        // Accept only image files
+        if (!file.mimetype.startsWith('image/')) {
+            return cb(new Error('Only image files are allowed!'), false);
+        }
+        cb(null, true);
+    }
+});
+
+// Export both cloudinary and upload middleware
+module.exports = {
+    cloudinary,
+    uploadAvatar
+}; 
