@@ -1,1 +1,16 @@
- 
+<div class="container py-5">
+    <h1 class="mb-4">Important Pages</h1>
+    
+    <div class="row g-4">
+        <% pages.forEach(page => { %>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title"><%= page.title %></h5>
+                        <a href="<%= page.url %>" class="btn btn-outline-primary">Read More</a>
+                    </div>
+                </div>
+            </div>
+        <% }); %>
+    </div>
+</div> 

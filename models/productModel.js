@@ -24,6 +24,10 @@ const productSchema = new mongoose.Schema({
         ref: 'Category',
         required: true
     },
+    manufacturer: {
+        type: String,
+        required: true
+    },
     stock: {
         type: Number,
         default: 0,
@@ -33,10 +37,34 @@ const productSchema = new mongoose.Schema({
         url: String,
         public_id: String
     }],
-    brand: String,
+    reviews: [{
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        rating: {
+            type: Number,
+            required: true,
+            min: 1,
+            max: 5
+        },
+        comment: String,
+        createdAt: {
+            type: Date,
+            default: Date.now
+        }
+    }],
+    averageRating: {
+        type: Number,
+        default: 0
+    },
     isActive: {
         type: Boolean,
         default: true
+    },
+    isFeatured: {
+        type: Boolean,
+        default: false
     }
 }, { 
     timestamps: true,
@@ -66,6 +94,17 @@ productSchema.pre('findOneAndUpdate', function(next) {
     }
     next();
 });
+
+// Calculate average rating
+productSchema.methods.calculateAverageRating = function() {
+    if (this.reviews.length === 0) {
+        this.averageRating = 0;
+    } else {
+        const sum = this.reviews.reduce((acc, review) => acc + review.rating, 0);
+        this.averageRating = sum / this.reviews.length;
+    }
+    return this.averageRating;
+};
 
 // Create a new model instance
 const Product = mongoose.model('Product', productSchema);

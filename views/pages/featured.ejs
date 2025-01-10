@@ -1,1 +1,25 @@
- 
+<div class="container py-5">
+    <h1 class="mb-4">Featured Products</h1>
+    
+    <div class="row g-4">
+        <% featuredProducts.forEach(product => { %>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <img src="<%= product.images[0]?.url || '/images/default-product.jpg' %>" 
+                         class="card-img-top" 
+                         alt="<%= product.name %>">
+                    <div class="card-body">
+                        <h5 class="card-title"><%= product.name %></h5>
+                        <p class="card-text text-muted">
+                            <%= product.description.substring(0, 100) %>...
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="h5 mb-0">$<%= product.price.toFixed(2) %></span>
+                            <button class="btn btn-primary btn-sm">Add to Cart</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <% }); %>
+    </div>
+</div> 

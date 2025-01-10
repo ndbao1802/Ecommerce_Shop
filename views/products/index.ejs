@@ -1,22 +1,376 @@
-<div class="container py-5">
-    <div class="row g-4">
-        <% products.forEach(product => { %>
-            <div class="col-md-4 col-lg-3">
+<div class="container-fluid py-5">
+    <div class="row">
+        <!-- Filters Sidebar -->
+        <div class="col-lg-3">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form id="filterForm" method="GET">
+                        <!-- Search -->
+                        <div class="mb-3">
+                            <label class="form-label">Search</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="search" 
+                                   value="<%= filters.search || '' %>"
+                                   placeholder="Search products...">
+                        </div>
+
+                        <!-- Category Filter -->
+                        <div class="mb-3">
+                            <label class="form-label">Category</label>
+                            <select class="form-select" name="category">
+                                <option value="">All Categories</option>
+                                <% categories.forEach(category => { %>
+                                    <option value="<%= category._id %>" 
+                                            <%= filters.category === category._id.toString() ? 'selected' : '' %>>
+                                        <%= category.name %>
+                                    </option>
+                                <% }); %>
+                            </select>
+                        </div>
+
+                        <!-- Brand Filter -->
+                        <div class="mb-3">
+                            <label class="form-label">Brand</label>
+                            <select class="form-select" name="brand">
+                                <option value="">All Brands</option>
+                                <% uniqueBrands.forEach(brand => { %>
+                                    <option value="<%= brand %>"
+                                            <%= filters.brand === brand ? 'selected' : '' %>>
+                                        <%= brand %>
+                                    </option>
+                                <% }); %>
+                            </select>
+                        </div>
+
+                        <!-- Price Range -->
+                        <div class="mb-3">
+                            <label class="form-label">Price Range: $<span id="priceMin">0</span> - $<span id="priceMax"><%= maxPrice %></span></label>
+                            <div id="priceSlider"></div>
+                            <input type="hidden" name="minPrice" id="minPrice" value="<%= filters.minPrice || 0 %>">
+                            <input type="hidden" name="maxPrice" id="maxPrice" value="<%= filters.maxPrice || maxPrice %>">
+                        </div>
+
+                        <!-- Sort -->
+                        <div class="mb-3">
+                            <label class="form-label">Sort By</label>
+                            <select class="form-select" name="sort">
+                                <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>
+                                    Newest First
+                                </option>
+                                <option value="oldest" <%= filters.sort === 'oldest' ? 'selected' : '' %>>
+                                    Oldest First
+                                </option>
+                                <option value="price-asc" <%= filters.sort === 'price-asc' ? 'selected' : '' %>>
+                                    Price: Low to High
+                                </option>
+                                <option value="price-desc" <%= filters.sort === 'price-desc' ? 'selected' : '' %>>
+                                    Price: High to Low
+                                </option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Grid -->
+        <div class="col-lg-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4>Products (<%= pagination.total %>)</h4>
+                <div class="d-flex gap-2 align-items-center">
+                    <select class="form-select" style="width: auto;" id="perPage">
+                        <option value="12" <%= pagination.limit === 12 ? 'selected' : '' %>>12 per page</option>
+                        <option value="24" <%= pagination.limit === 24 ? 'selected' : '' %>>24 per page</option>
+                        <option value="48" <%= pagination.limit === 48 ? 'selected' : '' %>>48 per page</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row g-4" id="productsGrid">
+                <% products.forEach(product => { %>
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <a href="/products/<%= product._id %>" class="text-decoration-none">
+                                <img src="<%= product.images[0]?.url || '/images/default-product.jpg' %>" 
+                                     class="card-img-top" 
+                                     alt="<%= product.name %>"
+                                     style="height: 200px; object-fit: cover;">
+                            </a>
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <a href="/products/<%= product._id %>" class="text-decoration-none text-dark">
+                                        <%= product.name %>
+                                    </a>
+                                </h5>
+                                <p class="card-text text-muted">
+                                    <%= product.description.substring(0, 100) %>...
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="h5 mb-0">$<%= product.price.toFixed(2) %></span>
+                                    <button class="btn btn-primary btn-sm" 
+                                            onclick="addToCart('<%= product._id %>')">
+                                        Add to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-content-center mt-4">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination" id="pagination">
+                        <% for(let i = 1; i <= pagination.pages; i++) { %>
+                            <li class="page-item <%= pagination.page === i ? 'active' : '' %>">
+                                <a class="page-link" href="#" data-page="<%= i %>"><%= i %></a>
+                            </li>
+                        <% } %>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.7.0/nouislider.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.7.0/nouislider.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const maxPrice = <%= maxPrice %>; // Get maxPrice from server
+
+    // Initialize price range slider
+    const priceSlider = document.getElementById('priceSlider');
+    const priceMin = document.getElementById('priceMin');
+    const priceMax = document.getElementById('priceMax');
+    const minPriceInput = document.getElementById('minPrice');
+    const maxPriceInput = document.getElementById('maxPrice');
+
+    noUiSlider.create(priceSlider, {
+        start: [
+            parseInt(minPriceInput.value) || 0,
+            parseInt(maxPriceInput.value) || maxPrice
+        ],
+        connect: true,
+        range: {
+            'min': 0,
+            'max': maxPrice
+        },
+        step: Math.ceil(maxPrice / 100), // Dynamic step based on max price
+        format: {
+            to: value => Math.round(value),
+            from: value => Math.round(value)
+        }
+    });
+
+    // Update the maxPrice span with the actual max price
+    document.getElementById('priceMax').textContent = maxPrice;
+    if (!maxPriceInput.value) {
+        maxPriceInput.value = maxPrice;
+    }
+
+    priceSlider.noUiSlider.on('update', function(values, handle) {
+        priceMin.textContent = values[0];
+        priceMax.textContent = values[1];
+        minPriceInput.value = values[0];
+        maxPriceInput.value = values[1];
+    });
+
+    // Fix the filter functionality
+    const filterForm = document.getElementById('filterForm');
+    const perPageSelect = document.getElementById('perPage');
+    const pagination = document.getElementById('pagination');
+    const productsGrid = document.getElementById('productsGrid');
+
+    async function fetchProducts(params) {
+        try {
+            const queryString = new URLSearchParams(params).toString();
+            const response = await fetch(`/products?${queryString}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            if (!response.ok) throw new Error('Network response was not ok');
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error fetching products:', error);
+            return null;
+        }
+    }
+
+    function updateURL(params) {
+        const url = new URL(window.location);
+        Object.entries(params).forEach(([key, value]) => {
+            if (value) {
+                url.searchParams.set(key, value);
+            } else {
+                url.searchParams.delete(key);
+            }
+        });
+        window.history.pushState({}, '', url);
+    }
+
+    function updatePagination(data) {
+        const { page, pages } = data.pagination;
+        let paginationHTML = '';
+        
+        for (let i = 1; i <= pages; i++) {
+            paginationHTML += `
+                <li class="page-item ${page === i ? 'active' : ''}">
+                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                </li>
+            `;
+        }
+        
+        pagination.innerHTML = paginationHTML;
+    }
+
+    async function applyFilters(params = {}) {
+        try {
+            const data = await fetchProducts(params);
+            if (data) {
+                updateProductsGrid(data.products);
+                updatePagination(data.pagination);
+                updateURL(params);
+                
+                // Update total products count
+                const totalElement = document.querySelector('h4');
+                if (totalElement) {
+                    totalElement.textContent = `Products (${data.pagination.total})`;
+                }
+            }
+        } catch (error) {
+            console.error('Error applying filters:', error);
+        }
+    }
+
+    // Handle form submission
+    filterForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const params = Object.fromEntries(formData.entries());
+        
+        // Remove empty values
+        Object.keys(params).forEach(key => {
+            if (!params[key]) delete params[key];
+        });
+        
+        await applyFilters(params);
+    });
+
+    // Handle price slider changes
+    priceSlider.noUiSlider.on('change', async function() {
+        const formData = new FormData(filterForm);
+        const params = Object.fromEntries(formData.entries());
+        await applyFilters(params);
+    });
+
+    // Handle all filter changes
+    const filterInputs = filterForm.querySelectorAll('select, input[type="hidden"]');
+    filterInputs.forEach(input => {
+        input.addEventListener('change', async () => {
+            const formData = new FormData(filterForm);
+            const params = Object.fromEntries(formData.entries());
+            await applyFilters(params);
+        });
+    });
+
+    // Handle pagination clicks
+    pagination.addEventListener('click', async function(e) {
+        e.preventDefault();
+        if (e.target.classList.contains('page-link')) {
+            const page = e.target.dataset.page;
+            const formData = new FormData(filterForm);
+            const params = Object.fromEntries(formData.entries());
+            params.page = page;
+            await applyFilters(params);
+        }
+    });
+
+    // Handle per page change
+    perPageSelect.addEventListener('change', async function() {
+        const formData = new FormData(filterForm);
+        const params = Object.fromEntries(formData.entries());
+        params.limit = this.value;
+        await applyFilters(params);
+    });
+
+    // Add debounced filter for instant search
+    let searchTimeout;
+    const searchInput = filterForm.querySelector('input[name="search"]');
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(async () => {
+            const formData = new FormData(filterForm);
+            const params = Object.fromEntries(formData.entries());
+            await applyFilters(params);
+        }, 500);
+    });
+
+    function updateProductsGrid(products) {
+        productsGrid.innerHTML = products.map(product => `
+            <div class="col-md-4">
                 <div class="card h-100">
-                    <img src="<%= product.images && product.images[0] ? product.images[0].url : '/images/default-product.jpg' %>" 
-                         class="card-img-top" 
-                         alt="<%= product.name %>"
-                         style="height: 200px; object-fit: cover;">
+                    <a href="/products/${product._id}" class="text-decoration-none">
+                        <img src="${product.images[0]?.url || '/images/default-product.jpg'}"
+                             class="card-img-top"
+                             alt="${product.name}"
+                             style="height: 200px; object-fit: cover;">
+                    </a>
                     <div class="card-body">
-                        <h5 class="card-title"><%= product.name %></h5>
-                        <p class="card-text text-truncate"><%= product.description %></p>
+                        <h5 class="card-title">
+                            <a href="/products/${product._id}" class="text-decoration-none text-dark">
+                                ${product.name}
+                            </a>
+                        </h5>
+                        <p class="card-text text-muted">
+                            ${product.description ? product.description.substring(0, 100) + '...' : ''}
+                        </p>
                         <div class="d-flex justify-content-between align-items-center">
-                            <span class="price">$<%= product.price.toFixed(2) %></span>
-                            <a href="/products/<%= product._id %>" class="btn btn-primary">View Details</a>
+                            <span class="h5 mb-0">$${product.price.toFixed(2)}</span>
+                            <button class="btn btn-primary btn-sm" 
+                                    onclick="addToCart('${product._id}')">
+                                Add to Cart
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-        <% }); %>
-    </div>
-</div> 
+        `).join('');
+    }
+});
+</script>
+
+<style>
+.noUi-connect {
+    background: #0d6efd;
+}
+
+.noUi-handle {
+    border: 1px solid #0d6efd;
+    background: #fff;
+    cursor: pointer;
+}
+
+.noUi-handle:before,
+.noUi-handle:after {
+    background: #0d6efd;
+}
+
+.noUi-tooltip {
+    display: none;
+}
+
+.noUi-active .noUi-tooltip {
+    display: block;
+}
+</style> 
