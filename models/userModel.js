@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 // Cart schema
 const cartItemSchema = new mongoose.Schema({
@@ -41,8 +42,12 @@ const userSchema = new mongoose.Schema({
     },
     isActive: {
         type: Boolean,
-        default: true
+        default: false
     },
+    activationToken: String,
+    activationExpires: Date,
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
     addresses: [{
         street: String,
         ward: String,
@@ -153,6 +158,17 @@ userSchema.methods.updateCartQuantity = async function(productId, quantity) {
 userSchema.methods.clearCart = async function() {
     this.cart = [];
     return this.save();
+};
+
+// Add methods for token generation
+userSchema.methods.generateActivationToken = function() {
+    this.activationToken = crypto.randomBytes(32).toString('hex');
+    this.activationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+};
+
+userSchema.methods.generateResetToken = function() {
+    this.resetPasswordToken = crypto.randomBytes(32).toString('hex');
+    this.resetPasswordExpires = Date.now() + 1 * 60 * 60 * 1000; // 1 hour
 };
 
 module.exports = mongoose.model('User', userSchema);

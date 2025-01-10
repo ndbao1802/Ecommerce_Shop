@@ -6,7 +6,12 @@
                     <h4 class="mb-0">Register</h4>
                 </div>
                 <div class="card-body">
-                    <form action="/users/register" method="POST">
+                    <!-- Add error message display -->
+                    <% if (typeof error !== 'undefined') { %>
+                        <div class="alert alert-danger"><%= error %></div>
+                    <% } %>
+                    
+                    <form action="/users/register" method="POST" id="registerForm">
                         <div class="mb-3">
                             <label for="name" class="form-label">Full Name</label>
                             <input type="text" class="form-control" id="name" name="name" required>
@@ -38,9 +43,10 @@
             </div>
         </div>
     </div>
-</div> 
+</div>
 
 <script>
+// Email availability check
 async function checkEmailAvailability(email) {
     if (!email) return;
     
@@ -70,4 +76,13 @@ async function checkEmailAvailability(email) {
         console.error('Error checking email:', error);
     }
 }
+
+// Form submission handling
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+    const emailInput = document.getElementById('email');
+    if (emailInput.classList.contains('is-invalid')) {
+        e.preventDefault();
+        alert('Please use a different email address');
+    }
+});
 </script> 

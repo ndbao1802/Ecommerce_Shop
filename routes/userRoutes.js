@@ -5,7 +5,11 @@ const { isAuth } = require('../middleware/auth');
 
 // Auth routes
 router.get('/login', (req, res) => {
-    res.render('users/login');
+    res.render('users/login', {
+        success_msg: req.flash('success_msg'),
+        error_msg: req.flash('error_msg'),
+        warning_msg: req.flash('warning_msg')
+    });
 });
 
 router.get('/register', (req, res) => {
@@ -39,5 +43,14 @@ router.delete('/addresses/:addressId', isAuth, userController.deleteAddress);
 
 // Email availability check
 router.post('/check-email', userController.checkEmail);
+
+// Activation route
+router.get('/activate/:token', userController.activateAccount);
+
+// Password reset routes
+router.get('/forgot-password', (req, res) => res.render('users/forgot-password'));
+router.post('/forgot-password', userController.forgotPassword);
+router.get('/reset-password/:token', (req, res) => res.render('users/reset-password'));
+router.post('/reset-password/:token', userController.resetPassword);
 
 module.exports = router; 

@@ -1,5 +1,6 @@
 const User = require('../models/userModel');
 const passport = require('passport');
+const { sendMail } = require('../config/mail');
 
 const userController = {
     // Auth methods
@@ -8,41 +9,55 @@ const userController = {
             const { name, email, password, phone } = req.body;
 
             // Check if user exists
-            const userExists = await User.findOne({ email });
-            if (userExists) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Email already registered'
+            let user = await User.findOne({ email });
+            if (user) {
+                return res.render('users/register', {
+                    error: 'Email already registered',
+                    values: req.body // Preserve form values
                 });
             }
 
-            // Create user
-            const user = new User({
-                name,
-                email,
+            // Create new user
+            user = new User({ 
+                name, 
+                email, 
                 password,
-                phone
+                phone 
             });
-
+            
+            // Generate activation token
+            user.generateActivationToken();
+            
+            // Save user
             await user.save();
 
-            // Auto login after register
-            req.login(user, (err) => {
-                if (err) {
-                    console.error('Login error:', err);
-                    return res.status(500).json({
-                        success: false,
-                        error: 'Error logging in'
-                    });
-                }
-                res.json({ success: true });
-            });
+            try {
+                // Send activation email
+                const activationUrl = `${process.env.BASE_URL}/users/activate/${user.activationToken}`;
+                await sendMail({
+                    to: user.email,
+                    subject: 'Activate your account',
+                    html: `
+                        <h1>Welcome to Gaming Store!</h1>
+                        <p>Please click the link below to activate your account:</p>
+                        <a href="${activationUrl}">${activationUrl}</a>
+                        <p>This link will expire in 24 hours.</p>
+                    `
+                });
 
+                req.flash('success_msg', 'Registration successful! Please check your email to activate your account.');
+                res.redirect('/users/login');
+            } catch (emailError) {
+                // If email fails, still create the account but inform the user
+                console.error('Email sending error:', emailError);
+                req.flash('warning_msg', 'Account created but activation email could not be sent. Please contact support.');
+                res.redirect('/users/login');
+            }
         } catch (error) {
-            console.error('Register error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error registering user'
+            console.error('Registration error:', error);
+            res.render('users/register', {
+                error: 'Error during registration. Please try again.',
+                values: req.body // Preserve form values
             });
         }
     },
@@ -50,33 +65,31 @@ const userController = {
     login: (req, res, next) => {
         passport.authenticate('local', (err, user, info) => {
             if (err) {
-                return next(err);
+                return res.status(500).json({
+                    success: false,
+                    error: 'Authentication error'
+                });
             }
+            
             if (!user) {
-                // For AJAX requests
-                if (req.xhr || req.headers.accept.includes('json')) {
-                    return res.status(401).json({
-                        success: false,
-                        error: info.message
-                    });
-                }
-                // For regular form submissions
-                req.flash('error_msg', info.message);
-                return res.redirect('/users/login');
+                return res.status(401).json({
+                    success: false,
+                    error: info.message
+                });
             }
+
             req.login(user, (err) => {
                 if (err) {
-                    return next(err);
-                }
-                // For AJAX requests
-                if (req.xhr || req.headers.accept.includes('json')) {
-                    return res.json({ 
-                        success: true,
-                        redirect: '/' // Add redirect URL
+                    return res.status(500).json({
+                        success: false,
+                        error: 'Login error'
                     });
                 }
-                // For regular form submissions
-                return res.redirect('/');
+
+                return res.json({
+                    success: true,
+                    redirect: '/'
+                });
             });
         })(req, res, next);
     },
@@ -402,6 +415,106 @@ const userController = {
             res.status(500).json({
                 error: 'Error checking email availability'
             });
+        }
+    },
+
+    activateAccount: async (req, res) => {
+        try {
+            const { token } = req.params;
+            
+            const user = await User.findOne({
+                activationToken: token,
+                activationExpires: { $gt: Date.now() }
+            });
+
+            if (!user) {
+                return res.render('error', {
+                    message: 'Invalid or expired activation link',
+                    error: { status: 400 }
+                });
+            }
+
+            user.isActive = true;
+            user.activationToken = undefined;
+            user.activationExpires = undefined;
+            await user.save();
+
+            // Render the success page instead of redirecting
+            res.render('users/activation-success', { layout: false });
+        } catch (error) {
+            console.error('Activation error:', error);
+            res.render('error', {
+                message: 'Error activating account',
+                error: { status: 500 }
+            });
+        }
+    },
+
+    forgotPassword: async (req, res) => {
+        try {
+            const { email } = req.body;
+            const user = await User.findOne({ email });
+
+            if (!user) {
+                return res.render('users/forgot-password', {
+                    error: 'No account found with that email'
+                });
+            }
+
+            // Generate reset token
+            user.generateResetToken();
+            await user.save();
+
+            // Send reset email
+            const resetUrl = `${process.env.BASE_URL}/users/reset-password/${user.resetPasswordToken}`;
+            await sendMail({
+                to: user.email,
+                subject: 'Reset your password',
+                html: `
+                    <h1>Password Reset Request</h1>
+                    <p>Click the link below to reset your password:</p>
+                    <a href="${resetUrl}">${resetUrl}</a>
+                    <p>This link will expire in 1 hour.</p>
+                    <p>If you didn't request this, please ignore this email.</p>
+                `
+            });
+
+            req.flash('success_msg', 'Password reset link sent to your email');
+            res.redirect('/users/login');
+        } catch (error) {
+            console.error('Forgot password error:', error);
+            res.render('users/forgot-password', {
+                error: 'Error processing request'
+            });
+        }
+    },
+
+    resetPassword: async (req, res) => {
+        try {
+            const { token } = req.params;
+            const { password } = req.body;
+
+            const user = await User.findOne({
+                resetPasswordToken: token,
+                resetPasswordExpires: { $gt: Date.now() }
+            });
+
+            if (!user) {
+                req.flash('error_msg', 'Invalid or expired reset link');
+                return res.redirect('/users/forgot-password');
+            }
+
+            user.password = password;
+            user.resetPasswordToken = undefined;
+            user.resetPasswordExpires = undefined;
+            await user.save();
+
+            req.flash('success_msg', 'Password has been reset! You can now login.');
+            res.redirect('/users/login');
+        } catch (error) {
+            console.error('Reset password error:', error);
+            req.flash('error_msg', 'Error resetting password');
+            res.redirect('/users/forgot-password');
         }
     }
 };

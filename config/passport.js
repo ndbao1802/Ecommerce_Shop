@@ -11,9 +11,16 @@ module.exports = (passport) => {
                     return done(null, false, { message: 'Email is not registered' });
                 }
 
+                // Check if account is activated
+                if (!user.isActive) {
+                    return done(null, false, { 
+                        message: 'Please activate your account. Check your email for the activation link.' 
+                    });
+                }
+
                 const isMatch = await user.comparePassword(password);
                 if (!isMatch) {
-                    return done(null, false, { message: 'Password is incorrect' });
+                    return done(null, false, { message: 'Invalid password' });
                 }
 
                 return done(null, user);
