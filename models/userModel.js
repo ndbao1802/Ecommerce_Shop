@@ -27,13 +27,21 @@ const userSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
+    googleId: {
+        type: String,
+        sparse: true
+    },
     password: {
         type: String,
-        required: true
+        required: function() {
+            return !this.googleId; // Password only required for non-Google users
+        }
     },
     phone: {
         type: String,
-        required: true
+        required: function() {
+            return this.isSetupComplete; // Only required after setup is complete
+        }
     },
     role: {
         type: String,
@@ -66,7 +74,11 @@ const userSchema = new mongoose.Schema({
     wishlist: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Product'
-    }]
+    }],
+    isSetupComplete: {
+        type: Boolean,
+        default: false
+    }
 }, { timestamps: true });
 
 // Hash password before saving

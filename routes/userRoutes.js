@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
 const { isAuth } = require('../middleware/auth');
+const User = require('../models/userModel');
+const passport = require('passport');
 
 // Auth routes
 router.get('/login', (req, res) => {
@@ -48,9 +50,122 @@ router.post('/check-email', userController.checkEmail);
 router.get('/activate/:token', userController.activateAccount);
 
 // Password reset routes
-router.get('/forgot-password', (req, res) => res.render('users/forgot-password'));
+router.get('/forgot-password', (req, res) => {
+    res.render('users/forgot-password');
+});
 router.post('/forgot-password', userController.forgotPassword);
-router.get('/reset-password/:token', (req, res) => res.render('users/reset-password'));
+router.get('/reset-password/:token', (req, res) => {
+    const { token } = req.params;
+    // Verify token exists and is not expired before showing the form
+    User.findOne({
+        resetPasswordToken: token,
+        resetPasswordExpires: { $gt: Date.now() }
+    }).then(user => {
+        if (!user) {
+            req.flash('error_msg', 'Password reset token is invalid or has expired');
+            return res.redirect('/users/forgot-password');
+        }
+        res.render('users/reset-password', { token });
+    }).catch(err => {
+        console.error('Error verifying reset token:', err);
+        req.flash('error_msg', 'Error verifying reset token');
+        res.redirect('/users/forgot-password');
+    });
+});
 router.post('/reset-password/:token', userController.resetPassword);
+
+// Google authentication routes
+router.get('/auth/google',
+    passport.authenticate('google', { 
+        scope: ['profile', 'email']
+    })
+);
+
+router.get('/auth/google/callback',
+    (req, res, next) => {
+        passport.authenticate('google', (err, user, info) => {
+            console.log('Google callback - user:', user);
+            console.log('Google callback - info:', info);
+
+            if (err) {
+                console.error('Google auth error:', err);
+                req.flash('error_msg', 'Authentication error');
+                return res.redirect('/users/login');
+            }
+
+            if (!user) {
+                req.flash('error_msg', info?.message || 'Authentication failed');
+                return res.redirect('/users/login');
+            }
+
+            req.logIn(user, (err) => {
+                if (err) {
+                    console.error('Login error:', err);
+                    req.flash('error_msg', 'Error during login');
+                    return res.redirect('/users/login');
+                }
+
+                // Check if user needs to complete setup
+                if (!user.isSetupComplete) {
+                    return res.redirect('/users/complete-setup');
+                }
+                res.redirect('/');
+            });
+        })(req, res, next);
+    }
+);
+
+// Google setup routes
+router.get('/complete-setup', (req, res) => {
+    if (!req.isAuthenticated()) {
+        return res.redirect('/users/login');
+    }
+    
+    if (req.user.isSetupComplete) {
+        return res.redirect('/');
+    }
+    
+    res.render('users/google-setup');
+});
+
+router.post('/complete-setup', (req, res, next) => {
+    if (!req.isAuthenticated()) {
+        return res.redirect('/users/login');
+    }
+    
+    next();
+}, async (req, res) => {
+    try {
+        const { phone } = req.body;
+        console.log('Completing setup for user:', req.user._id);
+        
+        // Update user
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user._id,
+            {
+                phone,
+                isSetupComplete: true
+            },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            throw new Error('User not found');
+        }
+
+        // Update the session user data
+        req.user.phone = phone;
+        req.user.isSetupComplete = true;
+
+        console.log('Setup completed:', updatedUser);
+        req.flash('success_msg', 'Profile setup completed!');
+        res.redirect('/');
+    } catch (error) {
+        console.error('Setup error:', error);
+        res.render('users/google-setup', {
+            error: 'Error completing setup. Please try again.'
+        });
+    }
+});
 
 module.exports = router; 

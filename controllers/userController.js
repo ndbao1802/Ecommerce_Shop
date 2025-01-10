@@ -9,18 +9,21 @@ const userController = {
             const { name, email, password, phone } = req.body;
 
             // Check if user exists
-            let user = await User.findOne({ email });
-            if (user) {
+            const existingUser = await User.findOne({ 
+                email: { $regex: new RegExp(`^${email}$`, 'i') } // Case-insensitive check
+            });
+            
+            if (existingUser) {
                 return res.render('users/register', {
-                    error: 'Email already registered',
-                    values: req.body // Preserve form values
+                    error: 'This email is already registered',
+                    values: { name, phone } // Preserve form values except email
                 });
             }
 
             // Create new user
-            user = new User({ 
+            const user = new User({ 
                 name, 
-                email, 
+                email: email.toLowerCase(), // Store email in lowercase
                 password,
                 phone 
             });
@@ -405,8 +408,24 @@ const userController = {
     checkEmail: async (req, res) => {
         try {
             const { email } = req.body;
-            const existingUser = await User.findOne({ email });
+
+            // Basic email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return res.status(400).json({
+                    available: false,
+                    error: 'Invalid email format'
+                });
+            }
+
+            // Case-insensitive email check
+            const existingUser = await User.findOne({ 
+                email: { $regex: new RegExp(`^${email}$`, 'i') }
+            });
             
+            // Add a small delay to prevent brute force attempts
+            await new Promise(resolve => setTimeout(resolve, 500));
+
             res.json({
                 available: !existingUser
             });
@@ -453,11 +472,16 @@ const userController = {
     forgotPassword: async (req, res) => {
         try {
             const { email } = req.body;
-            const user = await User.findOne({ email });
+
+            // Find user and validate email
+            const user = await User.findOne({ 
+                email: { $regex: new RegExp(`^${email}$`, 'i') }
+            });
 
             if (!user) {
-                return res.render('users/forgot-password', {
-                    error: 'No account found with that email'
+                return res.status(404).json({
+                    success: false,
+                    error: 'No account found with this email address'
                 });
             }
 
@@ -469,22 +493,44 @@ const userController = {
             const resetUrl = `${process.env.BASE_URL}/users/reset-password/${user.resetPasswordToken}`;
             await sendMail({
                 to: user.email,
-                subject: 'Reset your password',
+                subject: 'Reset Your Password - Gaming Store',
                 html: `
-                    <h1>Password Reset Request</h1>
-                    <p>Click the link below to reset your password:</p>
-                    <a href="${resetUrl}">${resetUrl}</a>
-                    <p>This link will expire in 1 hour.</p>
-                    <p>If you didn't request this, please ignore this email.</p>
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #333;">Reset Your Password</h2>
+                        <p>Hello ${user.name},</p>
+                        <p>We received a request to reset your password. Click the button below to create a new password:</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="${resetUrl}" 
+                               style="background-color: #007bff; color: white; padding: 12px 24px; 
+                                      text-decoration: none; border-radius: 4px; display: inline-block;">
+                                Reset Password
+                            </a>
+                        </div>
+                        <p style="color: #666; font-size: 14px;">
+                            This link will expire in 1 hour. If you didn't request this, you can safely ignore this email.
+                        </p>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                        <p style="color: #666; font-size: 12px;">
+                            If the button doesn't work, copy and paste this link into your browser:
+                            <br>
+                            ${resetUrl}
+                        </p>
+                    </div>
                 `
             });
 
-            req.flash('success_msg', 'Password reset link sent to your email');
-            res.redirect('/users/login');
+            // Ensure we're sending JSON response
+            res.json({
+                success: true,
+                message: 'Password reset link sent to your email'
+            });
+
         } catch (error) {
             console.error('Forgot password error:', error);
-            res.render('users/forgot-password', {
-                error: 'Error processing request'
+            // Ensure error response is also JSON
+            res.status(500).json({
+                success: false,
+                error: 'Error processing your request. Please try again.'
             });
         }
     },
@@ -494,27 +540,58 @@ const userController = {
             const { token } = req.params;
             const { password } = req.body;
 
+            // Find user with valid reset token
             const user = await User.findOne({
                 resetPasswordToken: token,
                 resetPasswordExpires: { $gt: Date.now() }
             });
 
             if (!user) {
-                req.flash('error_msg', 'Invalid or expired reset link');
-                return res.redirect('/users/forgot-password');
+                return res.render('users/reset-password', {
+                    token: req.params.token,
+                    error: 'Password reset link is invalid or has expired'
+                });
             }
 
+            // Update password and clear reset token
             user.password = password;
             user.resetPasswordToken = undefined;
             user.resetPasswordExpires = undefined;
             await user.save();
 
-            req.flash('success_msg', 'Password has been reset! You can now login.');
+            // Send confirmation email
+            await sendMail({
+                to: user.email,
+                subject: 'Password Successfully Reset - Gaming Store',
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #333;">Password Reset Successful</h2>
+                        <p>Hello ${user.name},</p>
+                        <p>Your password has been successfully reset. You can now log in with your new password.</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="${process.env.BASE_URL}/users/login" 
+                               style="background-color: #28a745; color: white; padding: 12px 24px; 
+                                      text-decoration: none; border-radius: 4px; display: inline-block;">
+                                Login Now
+                            </a>
+                        </div>
+                        <p style="color: #666; font-size: 14px;">
+                            If you didn't make this change or if you believe an unauthorized person has accessed your account,
+                            please contact us immediately.
+                        </p>
+                    </div>
+                `
+            });
+
+            req.flash('success_msg', 'Password has been reset! You can now login with your new password.');
             res.redirect('/users/login');
+
         } catch (error) {
             console.error('Reset password error:', error);
-            req.flash('error_msg', 'Error resetting password');
-            res.redirect('/users/forgot-password');
+            res.render('users/reset-password', {
+                token: req.params.token,
+                error: 'Error resetting password. Please try again.'
+            });
         }
     }
 };

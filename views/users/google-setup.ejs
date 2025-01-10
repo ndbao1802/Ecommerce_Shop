@@ -1,0 +1,33 @@
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Complete Your Profile</h4>
+                </div>
+                <div class="card-body">
+                    <% if (typeof error !== 'undefined') { %>
+                        <div class="alert alert-danger"><%= error %></div>
+                    <% } %>
+                    
+                    <form action="/users/complete-setup" method="POST" id="setupForm">
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Phone Number</label>
+                            <input type="tel" 
+                                   class="form-control" 
+                                   id="phone" 
+                                   name="phone" 
+                                   required
+                                   pattern="[0-9]{10}"
+                                   placeholder="Enter your phone number">
+                            <div class="form-text">Please enter a valid 10-digit phone number</div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Complete Setup</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

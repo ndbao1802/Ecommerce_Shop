@@ -18,8 +18,13 @@
                         </div>
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" required 
-                                   onblur="checkEmailAvailability(this.value)">
+                            <input type="email" 
+                                   class="form-control" 
+                                   id="email" 
+                                   name="email" 
+                                   required 
+                                   onblur="checkEmailAvailability(this.value)"
+                                   value="<%= typeof values !== 'undefined' ? values.email || '' : '' %>">
                             <div class="invalid-feedback" id="email-feedback"></div>
                         </div>
                         <div class="mb-3">
@@ -46,10 +51,30 @@
 </div>
 
 <script>
-// Email availability check
+let emailCheckTimeout;
+
 async function checkEmailAvailability(email) {
     if (!email) return;
     
+    // Clear any existing timeout
+    if (emailCheckTimeout) {
+        clearTimeout(emailCheckTimeout);
+    }
+
+    // Add loading state
+    const input = document.getElementById('email');
+    const feedback = document.getElementById('email-feedback');
+    input.classList.add('loading');
+    
+    // Validate email format first
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        input.classList.remove('loading');
+        input.classList.add('is-invalid');
+        feedback.textContent = 'Please enter a valid email address';
+        return;
+    }
+
     try {
         const response = await fetch('/users/check-email', {
             method: 'POST',
@@ -61,12 +86,12 @@ async function checkEmailAvailability(email) {
         });
 
         const data = await response.json();
-        const input = document.getElementById('email');
-        const feedback = document.getElementById('email-feedback');
+        input.classList.remove('loading');
 
         if (data.available) {
             input.classList.remove('is-invalid');
             input.classList.add('is-valid');
+            feedback.textContent = '';
         } else {
             input.classList.remove('is-valid');
             input.classList.add('is-invalid');
@@ -74,15 +99,42 @@ async function checkEmailAvailability(email) {
         }
     } catch (error) {
         console.error('Error checking email:', error);
+        input.classList.remove('loading');
+        input.classList.add('is-invalid');
+        feedback.textContent = 'Error checking email availability';
     }
 }
 
-// Form submission handling
+// Add this to your existing form submission handler
 document.getElementById('registerForm').addEventListener('submit', function(e) {
     const emailInput = document.getElementById('email');
+    
+    // Check if email is valid
     if (emailInput.classList.contains('is-invalid')) {
         e.preventDefault();
-        alert('Please use a different email address');
+        emailInput.focus();
+        return;
+    }
+    
+    // Check if email check is still loading
+    if (emailInput.classList.contains('loading')) {
+        e.preventDefault();
+        alert('Please wait while we verify your email');
+        return;
     }
 });
-</script> 
+</script>
+
+<style>
+.loading {
+    background-image: url('data:image/gif;base64,R0lGODlhEAAQAPIAAP///wAAAMLCwkJCQgAAAGJiYoKCgpKSkiH/C05FVFNDQVBFMi4wAwEAAAAh/hpDcmVhdGVkIHdpdGggYWpheGxvYWQuaW5mbwAh+QQJCgAAACwAAAAAEAAQAAADMwi63P4wyklrE2MIOggZnAdOmGYJRbExwroUmcG2LmDEwnHQLVsYOd2mBzkYDAdKa+dIAAAh+QQJCgAAACwAAAAAEAAQAAADNAi63P5OjCEgG4QMu7DmikRxQlFUYDEZIGBMRVsaqHwctXXf7WEYB4Ag1xjihkMZsiUkKhIAIfkECQoAAAAsAAAAABAAEAAAAzYIujIjK8pByJDMlFYvBoVjHA70GU7xSUJhmKtwHPAKzLO9HMaoKwJZ7Rf8AYPDDzKpZBqfvwQAIfkECQoAAAAsAAAAABAAEAAAAzMIumIlK8oyhpHsnFZfhYumCYUhDAQxRIdhHBGqRoKw0R8DYlJd8z0fMDgsGo/IpHI5TAAAIfkECQoAAAAsAAAAABAAEAAAAzIIunInK0rnZBTwGPNMgQwmdsNgXGJUlIWEuR5oWUIpz8pAEAMe6TwfwyYsGo/IpFKSAAAh+QQJCgAAACwAAAAAEAAQAAADMwi6IMKQORfjdOe82p4wGccc4CEuQradylesojEMBgsUc2G7sDX3lQGBMLAJibufbSlKAAAh+QQJCgAAACwAAAAAEAAQAAADMgi63P7wCRHZnFVdmgHu2nFwlWCI3WGc3TSWhUFGxTAUkGCbtgENBMJAEJsxgMLWzpEAACH5BAkKAAAALAAAAAAQABAAAAMyCLrc/jDKSatlQtScKdceCAjDII7HcQ4EMTCpyrCuUBjCYRgHVtqlAiB1YhiCnlsRkAAAOwAAAAAAAAAAAA==');
+    background-position: right 10px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+}
+
+.form-control.is-valid,
+.form-control.is-invalid {
+    padding-right: 40px !important;
+}
+</style> 
