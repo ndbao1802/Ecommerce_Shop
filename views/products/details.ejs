@@ -143,7 +143,7 @@
                     <div class="mb-3">
                         <label class="form-label">Rating</label>
                         <div class="rating">
-                            <% for(let i = 5; i >= 1; i--) { %>
+                            <% for(let i = 1; i <= 5; i++) { %>
                                 <input type="radio" name="rating" value="<%= i %>" id="star<%= i %>">
                                 <label for="star<%= i %>"><i class="bi bi-star-fill"></i></label>
                             <% } %>
@@ -157,7 +157,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="submitReview()">Submit Review</button>
+                <button type="submit" class="btn btn-primary" form="reviewForm">Submit Review</button>
             </div>
         </div>
     </div>
@@ -178,8 +178,8 @@
 
 .rating {
     display: flex;
-    flex-direction: row-reverse;
-    justify-content: flex-end;
+    flex-direction: row;
+    justify-content: flex-start;
 }
 
 .rating input {
@@ -191,16 +191,150 @@
     color: #ddd;
     font-size: 1.5rem;
     padding: 0 0.1em;
+    transition: color 0.2s;
 }
 
-.rating input:checked ~ label,
+.rating input:checked ~ label {
+    color: #ddd;
+}
+
 .rating label:hover,
-.rating label:hover ~ label {
+.rating label:hover ~ label,
+.rating input:checked + label,
+.rating input:checked + label ~ label {
     color: #ffd700;
 }
 </style>
 
 <script>
+// Add this at the top of your script section
+const productId = '<%= product._id %>'; // Get product ID from EJS
+
+// Add the pagination HTML generator function
+function generatePaginationHTML(currentPage, totalPages) {
+    if (totalPages <= 1) return '';
+
+    let html = '<ul class="pagination">';
+    
+    // Previous button
+    html += `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage - 1}" ${currentPage === 1 ? 'tabindex="-1" aria-disabled="true"' : ''}>
+                Previous
+            </a>
+        </li>
+    `;
+
+    // Page numbers
+    for (let i = 1; i <= totalPages; i++) {
+        html += `
+            <li class="page-item ${currentPage === i ? 'active' : ''}">
+                <a class="page-link" href="#" data-page="${i}">
+                    ${i}
+                </a>
+            </li>
+        `;
+    }
+
+    // Next button
+    html += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'tabindex="-1" aria-disabled="true"' : ''}>
+                Next
+            </a>
+        </li>
+    `;
+
+    html += '</ul>';
+    return html;
+}
+
+// Update the loadReviews function
+async function loadReviews(page = 1) {
+    try {
+        const response = await fetch(`/products/${productId}/reviews?page=${page}`);
+        const data = await response.json();
+
+        if (data.success) {
+            const reviewsList = document.getElementById('reviewsList');
+            
+            if (data.reviews.length === 0) {
+                reviewsList.innerHTML = `
+                    <div class="text-center py-4">
+                        <p class="text-muted mb-0">No reviews yet. Be the first to review this product!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Update reviews content
+            reviewsList.innerHTML = data.reviews.map(review => `
+                <div class="border-bottom mb-3 pb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <h6 class="mb-0">${review.user.name}</h6>
+                            <small class="text-muted">${new Date(review.createdAt).toLocaleDateString()}</small>
+                        </div>
+                        <div>
+                            ${Array(5).fill(0).map((_, i) => 
+                                `<i class="bi bi-star${i < review.rating ? '-fill' : ''} text-warning"></i>`
+                            ).join('')}
+                        </div>
+                    </div>
+                    <p class="mb-0">${review.comment}</p>
+                </div>
+            `).join('');
+
+            // Update pagination
+            const pagination = document.getElementById('reviewsPagination');
+            pagination.innerHTML = generatePaginationHTML(data.currentPage, data.totalPages);
+
+            // Add click handlers to pagination buttons
+            pagination.querySelectorAll('.page-link').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const pageNum = e.target.getAttribute('data-page');
+                    if (pageNum) {
+                        loadReviews(parseInt(pageNum));
+                    }
+                });
+            });
+
+            // Update average rating if available
+            if (data.averageRating) {
+                updateAverageRating(data.averageRating);
+            }
+        } else {
+            throw new Error(data.error || 'Failed to load reviews');
+        }
+    } catch (error) {
+        console.error('Error loading reviews:', error);
+        document.getElementById('reviewsList').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Error loading reviews. Please try again.
+            </div>
+        `;
+    }
+}
+
+// Optional: Add function to update average rating display
+function updateAverageRating(rating) {
+    const ratingDisplay = document.querySelector('.product-rating');
+    if (ratingDisplay) {
+        const stars = ratingDisplay.querySelectorAll('.bi');
+        stars.forEach((star, index) => {
+            star.classList.remove('bi-star-fill', 'bi-star');
+            star.classList.add(index < rating ? 'bi-star-fill' : 'bi-star');
+        });
+    }
+}
+
+// Load reviews when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    loadReviews(1);
+});
+
 // Image Gallery
 function updateMainImage(src) {
     document.querySelector('.main-image').src = src;
@@ -214,137 +348,129 @@ function updateMainImage(src) {
 let currentPage = 1;
 const reviewsPerPage = 5;
 
-async function loadReviews(page = 1) {
-    try {
-        const response = await fetch(`/products/<%= product._id %>/reviews?page=${page}&limit=${reviewsPerPage}`, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
-        const data = await response.json();
-        
-        if (response.ok) {
-            updateReviewsList(data.reviews || []);
-            updateReviewsPagination(data.pagination || {});
-            
-            // Update average rating display
-            if (data.ratings) {
-                updateRatingDisplay(data.ratings);
-            }
-        } else {
-            console.error('Error loading reviews:', data.error);
-            showAlert(data.error || 'Error loading reviews', 'danger');
-        }
-    } catch (error) {
-        console.error('Error loading reviews:', error);
-        showAlert('Error loading reviews', 'danger');
-    }
+// Helper function to show alerts
+function showAlert(message, type = 'success') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+    alertDiv.style.zIndex = '1050';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    document.body.appendChild(alertDiv);
+
+    // Remove alert after 3 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
 }
 
-function updateReviewsList(reviews = []) {
-    const reviewsList = document.getElementById('reviewsList');
-    if (!reviewsList) return;
-
-    reviewsList.innerHTML = reviews.length ? reviews.map(review => `
-        <div class="border-bottom mb-3 pb-3">
-            <div class="d-flex justify-content-between">
-                <div>
-                    <strong>${review.user?.name || 'Anonymous'}</strong>
-                    <div class="text-warning">
-                        ${Array(5).fill().map((_, i) => 
-                            `<i class="bi bi-star${i < (review.rating || 0) ? '-fill' : ''}"></i>`
-                        ).join('')}
-                    </div>
-                </div>
-                <small class="text-muted">
-                    ${new Date(review.createdAt).toLocaleDateString()}
-                </small>
-            </div>
-            <p class="mt-2 mb-0">${review.comment || ''}</p>
-        </div>
-    `).join('') : '<p class="text-center">No reviews yet</p>';
-}
-
-function updateReviewsPagination(pagination = {}) {
-    const page = pagination.page || 1;
-    const pages = pagination.pages || 1;
-    const paginationElement = document.getElementById('reviewsPagination');
-    
-    if (!paginationElement) return;
-    
-    let paginationHTML = '';
-    if (pages > 1) {
-        for (let i = 1; i <= pages; i++) {
-            paginationHTML += `
-                <li class="page-item ${page === i ? 'active' : ''}">
-                    <a class="page-link" href="#" onclick="loadReviews(${i}); return false;">
-                        ${i}
-                    </a>
-                </li>
-            `;
-        }
-    }
-    
-    paginationElement.innerHTML = paginationHTML;
-}
-
-async function submitReview() {
-    const form = document.getElementById('reviewForm');
-    const formData = new FormData(form);
-    const rating = formData.get('rating');
-    const comment = formData.get('comment');
-
-    // Validate input
-    if (!rating) {
-        alert('Please select a rating');
-        return;
-    }
-    if (!comment) {
-        alert('Please write a comment');
-        return;
-    }
+document.getElementById('reviewForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const submitBtn = this.closest('.modal-content').querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting...';
 
     try {
-        const response = await fetch(`/products/<%= product._id %>/reviews`, {
+        // Validate rating
+        const rating = document.querySelector('input[name="rating"]:checked');
+        if (!rating) {
+            throw new Error('Please select a rating');
+        }
+
+        const response = await fetch(`/products/${productId}/reviews`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                rating: parseInt(rating),
-                comment: comment
+                rating: rating.value,
+                comment: this.comment.value
             })
         });
 
         const data = await response.json();
         
-        if (response.ok) {
-            // Close modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('reviewModal'));
-            modal.hide();
-            
+        if (data.success) {
             // Reset form
-            form.reset();
+            this.reset();
             
-            // Reload reviews
-            loadReviews(1);
+            // Close modal properly using Bootstrap
+            const reviewModal = document.getElementById('reviewModal');
+            const modal = bootstrap.Modal.getInstance(reviewModal);
+            modal.hide();
+
+            // Wait for modal hide animation to complete
+            setTimeout(() => {
+                // Remove modal backdrop
+                document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+                
+                // Reset modal state
+                reviewModal.classList.remove('show');
+                reviewModal.style.display = 'none';
+                
+                // Reset body state
+                document.body.classList.remove('modal-open');
+                document.body.style.removeProperty('overflow');
+                document.body.style.removeProperty('padding-right');
+                
+                // Ensure scrolling is enabled
+                document.body.style.overflow = 'auto';
+                document.documentElement.style.overflow = 'auto';
+            }, 300); // Wait for Bootstrap modal hide animation
+            
+            // Refresh reviews
+            await loadReviews(1);
             
             // Show success message
-            alert('Review submitted successfully!');
+            showAlert('Review submitted successfully!', 'success');
         } else {
-            alert(data.error || 'Error submitting review');
+            throw new Error(data.error || 'Error submitting review');
         }
     } catch (error) {
-        console.error('Error submitting review:', error);
-        alert('Error submitting review');
+        console.error('Error:', error);
+        showAlert(error.message || 'Error submitting review', 'danger');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Submit Review';
     }
-}
-
-// Load reviews on page load
-document.addEventListener('DOMContentLoaded', () => {
-    loadReviews(1);
 });
+
+// Update the star rating interaction
+document.querySelectorAll('.rating input').forEach(input => {
+    input.addEventListener('change', function() {
+        const rating = parseInt(this.value);
+        const labels = this.parentElement.querySelectorAll('label i');
+        
+        labels.forEach((star, index) => {
+            star.style.color = index < rating ? '#ffd700' : '#ddd';
+        });
+    });
+});
+
+// Add hover effect
+const ratingContainer = document.querySelector('.rating');
+if (ratingContainer) {
+    const stars = ratingContainer.querySelectorAll('label i');
+    
+    ratingContainer.addEventListener('mouseover', function(e) {
+        if (e.target.tagName === 'I') {
+            const hoverIndex = Array.from(stars).indexOf(e.target);
+            stars.forEach((star, index) => {
+                star.style.color = index <= hoverIndex ? '#ffd700' : '#ddd';
+            });
+        }
+    });
+
+    ratingContainer.addEventListener('mouseout', function() {
+        const checkedInput = ratingContainer.querySelector('input:checked');
+        const rating = checkedInput ? parseInt(checkedInput.value) : 0;
+        
+        stars.forEach((star, index) => {
+            star.style.color = index < rating ? '#ffd700' : '#ddd';
+        });
+    });
+}
 
 // Add function to update rating display
 function updateRatingDisplay(ratings) {
@@ -423,23 +549,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
-
-// Helper function to show alerts
-function showAlert(message, type = 'success') {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
-    alertDiv.style.zIndex = '1050';
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-    document.body.appendChild(alertDiv);
-
-    // Remove alert after 3 seconds
-    setTimeout(() => {
-        alertDiv.remove();
-    }, 3000);
-}
 
 async function toggleWishlist(productId) {
     try {

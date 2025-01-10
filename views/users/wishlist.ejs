@@ -19,14 +19,16 @@
                     <% wishlist.forEach(product => { %>
                         <div class="col">
                             <div class="card h-100 product-card">
-                                <img src="<%= product.images[0]?.url || '/images/default-product.jpg' %>" class="card-img-top" alt="<%= product.name %>" style="height: 200px; object-fit: cover;" onerror="this.src='/images/default-product.jpg'" loading="lazy">
-                                <div class="card-body">
-                                    <h5 class="card-title"><%= product.name %></h5>
-                                    <p class="card-text text-muted mb-2"><%= product.description.substring(0, 100) %>...</p>
-                                    <p class="card-text">
-                                        <strong class="text-primary">$<%= product.price.toFixed(2) %></strong>
-                                    </p>
-                                </div>
+                                <a href="/products/<%= product._id %>" class="text-decoration-none">
+                                    <img src="<%= product.images[0]?.url || '/images/default-product.jpg' %>" class="card-img-top" alt="<%= product.name %>" style="height: 200px; object-fit: cover;" onerror="this.src='/images/default-product.jpg'" loading="lazy">
+                                    <div class="card-body">
+                                        <h5 class="card-title text-dark"><%= product.name %></h5>
+                                        <p class="card-text text-muted mb-2"><%= product.description.substring(0, 100) %>...</p>
+                                        <p class="card-text">
+                                            <strong class="text-primary">$<%= product.price.toFixed(2) %></strong>
+                                        </p>
+                                    </div>
+                                </a>
                                 <div class="card-footer bg-transparent border-top-0">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <button class="btn btn-primary btn-sm" onclick="addToCart('<%= product._id %>')">
