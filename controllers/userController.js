@@ -320,7 +320,11 @@ const userController = {
     // Wishlist methods
     getWishlist: async (req, res) => {
         try {
-            await req.user.populate('wishlist');
+            // Populate with specific fields we need
+            await req.user.populate({
+                path: 'wishlist',
+                select: 'name description price images brand' // Include any other fields you need
+            });
             
             res.render('users/wishlist', {
                 title: 'My Wishlist',

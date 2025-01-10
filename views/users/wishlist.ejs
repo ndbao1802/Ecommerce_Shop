@@ -19,7 +19,7 @@
                     <% wishlist.forEach(product => { %>
                         <div class="col">
                             <div class="card h-100 product-card">
-                                <img src="<%= product.images[0] %>" class="card-img-top" alt="<%= product.name %>">
+                                <img src="<%= product.images[0]?.url || '/images/default-product.jpg' %>" class="card-img-top" alt="<%= product.name %>" style="height: 200px; object-fit: cover;" onerror="this.src='/images/default-product.jpg'" loading="lazy">
                                 <div class="card-body">
                                     <h5 class="card-title"><%= product.name %></h5>
                                     <p class="card-text text-muted mb-2"><%= product.description.substring(0, 100) %>...</p>
