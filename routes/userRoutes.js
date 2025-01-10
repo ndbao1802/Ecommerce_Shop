@@ -37,4 +37,7 @@ router.post('/addresses', isAuth, userController.addAddress);
 router.put('/addresses/:addressId', isAuth, userController.updateAddress);
 router.delete('/addresses/:addressId', isAuth, userController.deleteAddress);
 
+// Email availability check
+router.post('/check-email', userController.checkEmail);
+
 module.exports = router; 

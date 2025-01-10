@@ -387,6 +387,22 @@ const userController = {
                 error: 'Error deleting address'
             });
         }
+    },
+
+    checkEmail: async (req, res) => {
+        try {
+            const { email } = req.body;
+            const existingUser = await User.findOne({ email });
+            
+            res.json({
+                available: !existingUser
+            });
+        } catch (error) {
+            console.error('Error checking email:', error);
+            res.status(500).json({
+                error: 'Error checking email availability'
+            });
+        }
     }
 };
 

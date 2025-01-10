@@ -13,7 +13,9 @@
                         </div>
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" required>
+                            <input type="email" class="form-control" id="email" name="email" required 
+                                   onblur="checkEmailAvailability(this.value)">
+                            <div class="invalid-feedback" id="email-feedback"></div>
                         </div>
                         <div class="mb-3">
                             <label for="phone" class="form-label">Phone Number</label>
@@ -37,3 +39,35 @@
         </div>
     </div>
 </div> 
+
+<script>
+async function checkEmailAvailability(email) {
+    if (!email) return;
+    
+    try {
+        const response = await fetch('/users/check-email', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ email })
+        });
+
+        const data = await response.json();
+        const input = document.getElementById('email');
+        const feedback = document.getElementById('email-feedback');
+
+        if (data.available) {
+            input.classList.remove('is-invalid');
+            input.classList.add('is-valid');
+        } else {
+            input.classList.remove('is-valid');
+            input.classList.add('is-invalid');
+            feedback.textContent = 'This email is already registered';
+        }
+    } catch (error) {
+        console.error('Error checking email:', error);
+    }
+}
+</script> 
