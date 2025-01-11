@@ -84,12 +84,18 @@ const adminController = {
 
     getUsers: async (req, res) => {
         try {
-            const users = await User.find().sort({ createdAt: -1 });
-            res.render('admin/users/index', {
+            const users = await User.find({})
+                .select('name email role isActive')
+                .lean();
+
+            res.render('admin/users', {
                 layout: 'layouts/adminLayout',
-                users
+                title: 'User Management',
+                users: users,
+                currentUser: req.user
             });
         } catch (error) {
+            console.error('Get users error:', error);
             req.flash('error_msg', 'Error loading users');
             res.redirect('/admin/dashboard');
         }
@@ -157,6 +163,96 @@ const adminController = {
         } catch (error) {
             req.flash('error_msg', 'Error updating settings');
             res.redirect('/admin/settings');
+        }
+    },
+
+    deleteUser: async (req, res) => {
+        try {
+            const userId = req.params.userId;
+
+            // Check if trying to delete own account
+            if (userId === req.user._id.toString()) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Cannot delete your own account'
+                });
+            }
+
+            // Find user and check if they're an admin
+            const user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'User not found'
+                });
+            }
+
+            if (user.role === 'admin') {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Cannot delete admin accounts'
+                });
+            }
+
+            await User.findByIdAndDelete(userId);
+
+            res.json({
+                success: true,
+                message: 'User deleted successfully'
+            });
+
+        } catch (error) {
+            console.error('Delete user error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Error deleting user'
+            });
+        }
+    },
+
+    toggleUserStatus: async (req, res) => {
+        try {
+            const userId = req.params.userId;
+
+            // Check if trying to modify own account
+            if (userId === req.user._id.toString()) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Cannot modify your own account status'
+                });
+            }
+
+            const user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'User not found'
+                });
+            }
+
+            // Prevent modifying other admin accounts
+            if (user.role === 'admin') {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Cannot modify admin account status'
+                });
+            }
+
+            // Toggle isActive status
+            user.isActive = !user.isActive;
+            await user.save();
+
+            res.json({
+                success: true,
+                message: `User ${user.isActive ? 'unbanned' : 'banned'} successfully`
+            });
+
+        } catch (error) {
+            console.error('Toggle user status error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Error updating user status'
+            });
         }
     }
 };

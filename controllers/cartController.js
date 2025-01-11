@@ -412,6 +412,8 @@ const cartController = {
 
     renderCheckout: async (req, res) => {
         try {
+            console.log('Rendering checkout page...'); // Debug log
+
             // Populate cart items with product details
             await req.user.populate({
                 path: 'cart.product',
@@ -423,8 +425,18 @@ const cartController = {
                 return sum + (item.product.price * item.quantity);
             }, 0);
 
+            // Debug log
+            console.log('Cart data:', {
+                cartItems: req.user.cart.length,
+                addresses: req.user.addresses?.length || 0,
+                total
+            });
+
+            // Render the checkout page
             res.render('cart/checkout', {
+                title: 'Checkout',
                 cart: req.user.cart,
+                addresses: req.user.addresses || [],
                 total: total
             });
         } catch (error) {

@@ -2,53 +2,94 @@
     <h2 class="mb-4">Checkout</h2>
     
     <div class="row">
-        <!-- Order Summary -->
+        <!-- Left Column: Order Details and Forms -->
         <div class="col-lg-8">
+            <!-- Order Items -->
             <div class="card mb-4">
                 <div class="card-body">
                     <h5 class="card-title mb-4">Order Items</h5>
                     <% cart.forEach(item => { %>
-                        <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
+                        <div class="d-flex align-items-center mb-3">
                             <img src="<%= item.product.images?.[0]?.url || '/images/default.jpg' %>"
                                  alt="<%= item.product.name %>"
                                  class="me-3"
                                  style="width: 60px; height: 60px; object-fit: contain;">
                             <div class="flex-grow-1">
                                 <h6 class="mb-0"><%= item.product.name %></h6>
-                                <small class="text-muted">
-                                    Quantity: <%= item.quantity %>
-                                </small>
+                                <small class="text-muted">Quantity: <%= item.quantity %></small>
                             </div>
                             <div class="text-end">
                                 <div>$<%= (item.product.price * item.quantity).toFixed(2) %></div>
-                                <small class="text-muted">
-                                    $<%= item.product.price.toFixed(2) %> each
-                                </small>
+                                <small class="text-muted">$<%= item.product.price.toFixed(2) %> each</small>
                             </div>
                         </div>
                     <% }); %>
-                    
-                    <div class="d-flex justify-content-between mt-4">
-                        <h6>Total:</h6>
-                        <h6>$<%= total.toFixed(2) %></h6>
+                </div>
+            </div>
+
+            <form id="checkoutForm" onsubmit="handleCheckout(event)">
+                <!-- Shipping Address -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Shipping Address</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Street Address</label>
+                                <input type="text" class="form-control" name="street" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Ward/Village</label>
+                                <input type="text" class="form-control" name="ward" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">District</label>
+                                <input type="text" class="form-control" name="district" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">City</label>
+                                <input type="text" class="form-control" name="city" required>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Shipping Address -->
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title mb-4">Shipping Address</h5>
-                    <!-- Add shipping form here -->
+
+                <!-- Payment Method -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Payment Method</h5>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="paymentMethod" id="cod" value="cod" checked required>
+                            <label class="form-check-label" for="cod">
+                                Cash on Delivery (COD)
+                            </label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="paymentMethod" id="bank" value="bank">
+                            <label class="form-check-label" for="bank">
+                                Bank Transfer
+                            </label>
+                        </div>
+
+                        <!-- Bank Transfer Details -->
+                        <div id="bankDetails" class="card p-3 mt-3" style="display: none;">
+                            <h6>Bank Transfer Details:</h6>
+                            <p class="mb-1">Bank: Example Bank</p>
+                            <p class="mb-1">Account Number: 1234567890</p>
+                            <p class="mb-1">Account Name: Your Store Name</p>
+                            <small class="text-muted">
+                                Please transfer the exact amount and include your order number in the transfer description.
+                            </small>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </form>
         </div>
-        
-        <!-- Payment Summary -->
+
+        <!-- Right Column: Order Summary -->
         <div class="col-lg-4">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title mb-4">Payment Summary</h5>
+                    <h5 class="card-title mb-4">Order Summary</h5>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Subtotal</span>
                         <span>$<%= total.toFixed(2) %></span>
@@ -62,9 +103,10 @@
                         <strong>Total</strong>
                         <strong>$<%= total.toFixed(2) %></strong>
                     </div>
-                    <button class="btn btn-primary w-100" onclick="processPayment()">
-                        Place Order
-                    </button>
+                    <div class="d-grid gap-2">
+                        <button type="submit" form="checkoutForm" class="btn btn-primary">Place Order</button>
+                        <a href="/cart" class="btn btn-outline-secondary">Back to Cart</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -72,7 +114,60 @@
 </div>
 
 <script>
-function processPayment() {
-    // Add payment processing logic here
-}
-</script> 
+    // Toggle bank transfer details
+    document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const bankDetails = document.getElementById('bankDetails');
+            bankDetails.style.display = this.value === 'bank' ? 'block' : 'none';
+        });
+    });
+    
+    async function handleCheckout(event) {
+        event.preventDefault();
+        
+        const form = event.target;
+        const formData = new FormData(form);
+        
+        try {
+            // Create the order with address and payment info
+            const orderResponse = await fetch('/orders/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    address: {
+                        street: formData.get('street'),
+                        ward: formData.get('ward'),
+                        district: formData.get('district'),
+                        city: formData.get('city')
+                    },
+                    paymentMethod: formData.get('paymentMethod')
+                })
+            });
+    
+            const orderResult = await orderResponse.json();
+    
+            if (orderResult.success) {
+                window.location.href = `/orders/${orderResult.orderId}`;
+            } else {
+                showAlert(orderResult.error || 'Error creating order', 'danger');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert(error.message || 'Error processing order', 'danger');
+        }
+    }
+    
+    function showAlert(message, type = 'success') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.querySelector('.container').insertBefore(alertDiv, document.querySelector('h2'));
+        
+        setTimeout(() => alertDiv.remove(), 3000);
+    }
+    </script>

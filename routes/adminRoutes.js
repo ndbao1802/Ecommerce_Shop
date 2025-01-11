@@ -39,6 +39,8 @@ router.delete('/products/:id', ensureAdmin, productController.deleteProduct);
 router.get('/users', ensureAdmin, adminController.getUsers);
 router.get('/users/create', ensureAdmin, adminController.getCreateUser);
 router.post('/users/create', ensureAdmin, adminController.postCreateUser);
+router.delete('/users/:userId', ensureAdmin, adminController.deleteUser);
+router.put('/users/:userId/toggle-status', ensureAdmin, adminController.toggleUserStatus);
 
 // Orders
 router.get('/orders', ensureAdmin, adminController.getOrders);

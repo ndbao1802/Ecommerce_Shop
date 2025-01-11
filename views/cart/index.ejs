@@ -222,7 +222,8 @@ async function removeFromCart(productId) {
 
 async function validateAndCheckout() {
     try {
-        // First validate the cart
+        console.log('Validating cart...'); // Debug log
+        
         const response = await fetch('/cart/validate', {
             method: 'POST',
             headers: {
@@ -232,13 +233,8 @@ async function validateAndCheckout() {
             }
         });
 
-        // Check if response is JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Server returned non-JSON response');
-        }
-
         const data = await response.json();
+        console.log('Validation response:', data); // Debug log
 
         if (!response.ok) {
             if (data.stockErrors) {
@@ -251,6 +247,7 @@ async function validateAndCheckout() {
         }
 
         // If validation passes, redirect to checkout page
+        console.log('Redirecting to checkout...'); // Debug log
         window.location.href = '/cart/checkout';
 
     } catch (error) {
