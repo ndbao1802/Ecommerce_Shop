@@ -85,7 +85,7 @@ const adminController = {
     getUsers: async (req, res) => {
         try {
             const users = await User.find({})
-                .select('name email role isActive')
+                .select('name email role isActive createdAt')
                 .lean();
 
             res.render('admin/users', {

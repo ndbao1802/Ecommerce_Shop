@@ -1,0 +1,172 @@
+<div class="container-fluid py-4">
+    <!-- Alert container -->
+    <div id="alertContainer"></div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Products Management</h5>
+                    
+                    <!-- Filter and Sort Controls -->
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <select class="form-select" id="filterCategory">
+                                <option value="">Filter by Category</option>
+                                <% categories.forEach(category => { %>
+                                    <option value="<%= category._id %>"><%= category.name %></option>
+                                <% }); %>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="filterManufacturer">
+                                <option value="">Filter by Manufacturer</option>
+                                <% manufacturers.forEach(manufacturer => { %>
+                                    <option value="<%= manufacturer %>"><%= manufacturer %></option>
+                                <% }); %>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="sortBy">
+                                <option value="">Sort by...</option>
+                                <option value="createdAt_desc">Newest First</option>
+                                <option value="createdAt_asc">Oldest First</option>
+                                <option value="price_asc">Price (Low to High)</option>
+                                <option value="price_desc">Price (High to Low)</option>
+                                <option value="totalPurchases_desc">Most Purchased</option>
+                                <option value="totalPurchases_asc">Least Purchased</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Image</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Manufacturer</th>
+                                    <th>Price</th>
+                                    <th>Stock</th>
+                                    <th>Total Purchases</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsTableBody">
+                                <% products.forEach(product => { %>
+                                    <tr>
+                                        <td>
+                                            <img src="<%= product.images?.[0]?.url || '/images/default.jpg' %>" 
+                                                 alt="<%= product.name %>"
+                                                 style="width: 50px; height: 50px; object-fit: cover;">
+                                        </td>
+                                        <td><%= product.name %></td>
+                                        <td><%= product.category?.name %></td>
+                                        <td><%= product.manufacturer %></td>
+                                        <td>$<%= product.price.toFixed(2) %></td>
+                                        <td><%= product.stock %></td>
+                                        <td><%= product.totalPurchases || 0 %></td>
+                                        <td>
+                                            <a href="/admin/products/<%= product._id %>/edit" 
+                                               class="btn btn-sm btn-primary">Edit</a>
+                                            <button onclick="deleteProduct('<%= product._id %>')"
+                                                    class="btn btn-sm btn-danger">Delete</button>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentProducts = <%- JSON.stringify(products) %>;
+
+// Add event listeners for filters and sort
+document.getElementById('filterCategory').addEventListener('change', applyFiltersAndSort);
+document.getElementById('filterManufacturer').addEventListener('change', applyFiltersAndSort);
+document.getElementById('sortBy').addEventListener('change', applyFiltersAndSort);
+
+function applyFiltersAndSort() {
+    console.log('Applying filters and sort...');
+    let filteredProducts = [...currentProducts];
+    
+    // Apply category filter
+    const categoryFilter = document.getElementById('filterCategory').value;
+    if (categoryFilter) {
+        filteredProducts = filteredProducts.filter(product => 
+            product.category && product.category._id === categoryFilter
+        );
+    }
+    
+    // Apply manufacturer filter
+    const manufacturerFilter = document.getElementById('filterManufacturer').value;
+    if (manufacturerFilter) {
+        filteredProducts = filteredProducts.filter(product => 
+            product.manufacturer === manufacturerFilter
+        );
+    }
+    
+    // Apply sorting
+    const sortBy = document.getElementById('sortBy').value;
+    if (sortBy) {
+        const [field, order] = sortBy.split('_');
+        
+        filteredProducts.sort((a, b) => {
+            let comparison;
+            
+            switch(field) {
+                case 'createdAt':
+                    comparison = new Date(a.createdAt) - new Date(b.createdAt);
+                    break;
+                case 'price':
+                    comparison = a.price - b.price;
+                    break;
+                case 'totalPurchases':
+                    comparison = (a.totalPurchases || 0) - (b.totalPurchases || 0);
+                    break;
+                default:
+                    comparison = 0;
+            }
+            
+            return order === 'asc' ? comparison : -comparison;
+        });
+    }
+    
+    updateTable(filteredProducts);
+}
+
+function updateTable(products) {
+    const tbody = document.getElementById('productsTableBody');
+    
+    tbody.innerHTML = products.map(product => `
+        <tr>
+            <td>
+                <img src="${product.images?.[0]?.url || '/images/default.jpg'}"
+                     alt="${product.name}"
+                     style="width: 50px; height: 50px; object-fit: cover;">
+            </td>
+            <td>${product.name}</td>
+            <td>${product.category?.name || ''}</td>
+            <td>${product.manufacturer}</td>
+            <td>$${product.price.toFixed(2)}</td>
+            <td>${product.stock}</td>
+            <td>${product.totalPurchases || 0}</td>
+            <td>
+                <a href="/admin/products/${product._id}/edit" 
+                   class="btn btn-sm btn-primary">Edit</a>
+                <button onclick="deleteProduct('${product._id}')"
+                        class="btn btn-sm btn-danger">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Your existing deleteProduct function remains the same...
+</script> 

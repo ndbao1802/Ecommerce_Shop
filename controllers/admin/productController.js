@@ -4,12 +4,25 @@ const { cloudinary } = require('../../config/cloudinary');
 
 const getProducts = async (req, res) => {
     try {
-        const products = await Product.find().populate('category');
+        const products = await Product.find()
+            .populate('category')
+            .lean();
+
+        // Get unique brands for filter dropdown
+        const brands = [...new Set(products.map(p => p.brand).filter(Boolean))];
+
+        // Get categories for filter dropdown
+        const categories = await Category.find().lean();
+
         res.render('admin/products/index', {
             layout: 'layouts/adminLayout',
-            products
+            title: 'Products Management',
+            products,
+            categories,
+            brands
         });
     } catch (error) {
+        console.error('Error loading products:', error);
         req.flash('error_msg', 'Error loading products');
         res.redirect('/admin/dashboard');
     }
