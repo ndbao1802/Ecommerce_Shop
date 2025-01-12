@@ -6,6 +6,13 @@
                     <h4 class="mb-0">Admin Login</h4>
                 </div>
                 <div class="card-body">
+                    <% if(messages.error_msg){ %>
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            <%= messages.error_msg %>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <% } %>
+                    
                     <form action="/admin/login" method="POST">
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>

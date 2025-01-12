@@ -23,8 +23,8 @@ const adminController = {
                     return res.redirect('/admin/login');
                 }
 
-                // Check if user is admin
-                if (!user.isAdmin) {
+                // Check if user is an admin
+                if (user.role !== 'admin') {
                     req.flash('error_msg', 'Access denied. Admin privileges required.');
                     return res.redirect('/admin/login');
                 }
@@ -36,13 +36,12 @@ const adminController = {
                         req.flash('error_msg', 'Error during login');
                         return res.redirect('/admin/login');
                     }
-
-                    // Redirect to admin dashboard
-                    res.redirect('/admin/dashboard');
+                    return res.redirect('/admin/dashboard');
                 });
+
             } catch (error) {
                 console.error('Login error:', error);
-                req.flash('error_msg', 'An error occurred during login');
+                req.flash('error_msg', 'Error processing login');
                 res.redirect('/admin/login');
             }
         })(req, res, next);

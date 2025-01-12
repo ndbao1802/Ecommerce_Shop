@@ -9,7 +9,16 @@ const { uploadSingle, uploadMultiple } = require('../middleware/upload');
 const User = require('../models/userModel');
 
 // Admin auth routes
-router.get('/login', adminController.getLogin);
+router.get('/login', (req, res) => {
+    res.render('admin/login', {
+        layout: 'layouts/adminLayout',
+        messages: {
+            error_msg: req.flash('error_msg'),
+            success_msg: req.flash('success_msg')
+        }
+    });
+});
+
 router.post('/login', adminController.postLogin);
 router.get('/logout', adminController.logout);
 
