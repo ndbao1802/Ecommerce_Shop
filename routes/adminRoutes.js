@@ -5,8 +5,9 @@ const categoryController = require('../controllers/admin/categoryController');
 const productController = require('../controllers/admin/productController');
 const { ensureAdmin } = require('../middleware/adminAuth');
 const homePageController = require('../controllers/admin/homePageController');
-const { uploadSingle, uploadMultiple } = require('../middleware/upload');
+const { uploadSingle, uploadMultiple, uploadAvatar } = require('../middleware/upload');
 const User = require('../models/userModel');
+const reportController = require('../controllers/admin/reportController');
 
 // Admin auth routes
 router.get('/login', (req, res) => {
@@ -61,5 +62,12 @@ router.post('/settings', ensureAdmin, adminController.updateSettings);
 // Home Page Settings
 router.get('/homepage/settings', ensureAdmin, homePageController.getHomePageSettings);
 router.post('/homepage/featured-products', ensureAdmin, homePageController.updateFeaturedProducts);
+
+// Add these routes
+router.get('/profile', ensureAdmin, adminController.getProfile);
+router.post('/profile', ensureAdmin, uploadAvatar, adminController.updateProfile);
+
+// Reports
+router.get('/reports', ensureAdmin, reportController.getRevenueReport);
 
 module.exports = router; 

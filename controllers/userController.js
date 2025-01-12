@@ -1,6 +1,9 @@
 const User = require('../models/userModel');
 const passport = require('passport');
 const { sendMail } = require('../config/mail');
+const bcrypt = require('bcryptjs');
+const cloudinary = require('cloudinary');
+const Order = require('../models/orderModel');
 
 const userController = {
     // Auth methods
@@ -65,7 +68,7 @@ const userController = {
         }
     },
 
-    login: (req, res, next) => {
+    login: async (req, res, next) => {
         passport.authenticate('local', (err, user, info) => {
             if (err) {
                 return res.status(500).json({
@@ -114,7 +117,11 @@ const userController = {
             
             res.render('users/profile', { 
                 title: 'My Profile',
-                user 
+                user,
+                messages: {
+                    success_msg: req.flash('success_msg'),
+                    error_msg: req.flash('error_msg')
+                }
             });
         } catch (error) {
             console.error('Error fetching profile:', error);
@@ -125,95 +132,74 @@ const userController = {
 
     updateProfile: async (req, res) => {
         try {
-            const { name, email, phone } = req.body;
+            const user = await User.findById(req.user.id);
+            const { name, email } = req.body;
 
-            // Validate input
-            if (!name || !email || !phone) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'All fields are required'
-                });
-            }
+            // Basic info update
+            if (name) user.name = name;
+            if (email) user.email = email;
 
-            // Check if email is taken (excluding current user)
-            const existingUser = await User.findOne({
-                email: email.toLowerCase(),
-                _id: { $ne: req.user._id }
-            });
-
-            if (existingUser) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Email is already taken'
-                });
-            }
-
-            // Update user
-            const updatedUser = await User.findByIdAndUpdate(
-                req.user._id,
-                {
-                    name,
-                    email: email.toLowerCase(),
-                    phone
-                },
-                { new: true }
-            );
-
-            res.json({
-                success: true,
-                user: {
-                    name: updatedUser.name,
-                    email: updatedUser.email,
-                    phone: updatedUser.phone
+            // Handle avatar upload
+            if (req.file) {
+                try {
+                    // Delete old avatar from Cloudinary if exists
+                    if (user.avatar && user.avatar.includes('cloudinary')) {
+                        const publicId = user.avatar.split('/').pop().split('.')[0];
+                        await cloudinary.uploader.destroy(publicId);
+                    }
+                    user.avatar = req.file.path;
+                    console.log('New avatar path:', req.file.path);
+                } catch (error) {
+                    console.error('Error handling avatar:', error);
+                    req.flash('error_msg', 'Error updating profile picture');
+                    return res.redirect('/users/profile');
                 }
-            });
+            }
+
+            await user.save();
+            req.flash('success_msg', 'Profile updated successfully');
+            res.redirect('/users/profile');
         } catch (error) {
             console.error('Profile update error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error updating profile'
-            });
+            req.flash('error_msg', 'Error updating profile');
+            res.redirect('/users/profile');
         }
     },
 
     updatePassword: async (req, res) => {
         try {
-            const { currentPassword, newPassword } = req.body;
+            const user = await User.findById(req.user.id);
+            const { currentPassword, newPassword, confirmPassword } = req.body;
 
-            // Validate input
-            if (!currentPassword || !newPassword) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'All fields are required'
-                });
+            // Validate password change
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                req.flash('error_msg', 'All password fields are required');
+                return res.redirect('/users/profile');
             }
 
-            // Get user with password
-            const user = await User.findById(req.user._id);
+            if (newPassword !== confirmPassword) {
+                req.flash('error_msg', 'New passwords do not match');
+                return res.redirect('/users/profile');
+            }
 
             // Verify current password
-            const isMatch = await user.comparePassword(currentPassword);
+            const isMatch = await bcrypt.compare(currentPassword, user.password);
             if (!isMatch) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Current password is incorrect'
-                });
+                req.flash('error_msg', 'Current password is incorrect');
+                return res.redirect('/users/profile');
             }
 
-            // Update password
-            user.password = newPassword;
-            await user.save();
+            // Hash new password
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(newPassword, salt);
 
-            res.json({
-                success: true,
-                message: 'Password updated successfully'
-            });
+            await user.save();
+            req.flash('success_msg', 'Password updated successfully');
+            res.redirect('/users/profile');
         } catch (error) {
             console.error('Password update error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error updating password'
-            });
+            req.flash('error_msg', 'Error updating password');
+            res.redirect('/users/profile');
         }
     },
 
@@ -390,106 +376,96 @@ const userController = {
     // Address methods
     getAddresses: async (req, res) => {
         try {
-            res.json({
-                success: true,
-                addresses: req.user.addresses
-            });
+            const user = await User.findById(req.user._id).select('addresses');
+            res.render('users/addresses', { addresses: user.addresses });
         } catch (error) {
-            console.error('Address error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error getting addresses'
-            });
+            console.error('Error fetching addresses:', error);
+            req.flash('error_msg', 'Error loading addresses');
+            res.redirect('/users/profile');
         }
     },
 
     addAddress: async (req, res) => {
         try {
-            const { street, ward, district, city, isDefault } = req.body;
-            
-            if (isDefault) {
-                req.user.addresses.forEach(addr => addr.isDefault = false);
+            const { street, city, state, zipCode, country, isDefault } = req.body;
+            const user = await User.findById(req.user._id);
+
+            // Create new address
+            const newAddress = {
+                street,
+                city,
+                state,
+                zipCode,
+                country,
+                isDefault: isDefault === 'true'
+            };
+
+            // If this is the first address or marked as default, update other addresses
+            if (isDefault === 'true' || user.addresses.length === 0) {
+                user.addresses.forEach(addr => addr.isDefault = false);
             }
 
-            req.user.addresses.push({
-                street,
-                ward,
-                district,
-                city,
-                isDefault
-            });
+            user.addresses.push(newAddress);
+            await user.save();
 
-            await req.user.save();
-
-            res.json({
-                success: true,
-                addresses: req.user.addresses
-            });
+            req.flash('success_msg', 'Address added successfully');
+            res.redirect('/users/addresses');
         } catch (error) {
-            console.error('Address error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error adding address'
-            });
+            console.error('Error adding address:', error);
+            req.flash('error_msg', 'Error adding address');
+            res.redirect('/users/addresses');
         }
     },
 
     updateAddress: async (req, res) => {
         try {
             const { addressId } = req.params;
-            const { street, ward, district, city, isDefault } = req.body;
+            const { street, city, state, zipCode, country, isDefault } = req.body;
+            const user = await User.findById(req.user._id);
 
-            const address = req.user.addresses.id(addressId);
+            const address = user.addresses.id(addressId);
             if (!address) {
-                return res.status(404).json({
-                    success: false,
-                    error: 'Address not found'
-                });
+                req.flash('error_msg', 'Address not found');
+                return res.redirect('/users/addresses');
             }
 
-            if (isDefault) {
-                req.user.addresses.forEach(addr => addr.isDefault = false);
-            }
-
+            // Update address fields
             address.street = street;
-            address.ward = ward;
-            address.district = district;
             address.city = city;
-            address.isDefault = isDefault;
+            address.state = state;
+            address.zipCode = zipCode;
+            address.country = country;
 
-            await req.user.save();
+            // Handle default address logic
+            if (isDefault === 'true' && !address.isDefault) {
+                user.addresses.forEach(addr => addr.isDefault = false);
+                address.isDefault = true;
+            }
 
-            res.json({
-                success: true,
-                addresses: req.user.addresses
-            });
+            await user.save();
+            req.flash('success_msg', 'Address updated successfully');
+            res.redirect('/users/addresses');
         } catch (error) {
-            console.error('Address error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error updating address'
-            });
+            console.error('Error updating address:', error);
+            req.flash('error_msg', 'Error updating address');
+            res.redirect('/users/addresses');
         }
     },
 
     deleteAddress: async (req, res) => {
         try {
             const { addressId } = req.params;
-            req.user.addresses = req.user.addresses.filter(
-                addr => addr._id.toString() !== addressId
-            );
-            await req.user.save();
+            const user = await User.findById(req.user._id);
 
-            res.json({
-                success: true,
-                addresses: req.user.addresses
-            });
+            user.addresses.pull(addressId);
+            await user.save();
+
+            req.flash('success_msg', 'Address deleted successfully');
+            res.redirect('/users/addresses');
         } catch (error) {
-            console.error('Address error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error deleting address'
-            });
+            console.error('Error deleting address:', error);
+            req.flash('error_msg', 'Error deleting address');
+            res.redirect('/users/addresses');
         }
     },
 
@@ -680,6 +656,88 @@ const userController = {
                 token: req.params.token,
                 error: 'Error resetting password. Please try again.'
             });
+        }
+    },
+
+    getOrders: async (req, res) => {
+        try {
+            // Get orders and populate necessary fields
+            const orders = await Order.find({ user: req.user._id })
+                .sort({ createdAt: -1 })
+                .populate({
+                    path: 'items.product',
+                    select: 'name images price'
+                })
+                .lean();
+
+            // Format the orders data
+            const formattedOrders = orders.map(order => ({
+                _id: order._id,
+                createdAt: order.createdAt,
+                total: order.total || 0,
+                status: order.status || 'processing',
+                items: order.items || [],
+                shippingAddress: order.shippingAddress || {},
+                subtotal: order.subtotal || 0,
+                shippingFee: order.shippingFee || 0
+            }));
+
+            res.render('users/orders/index', {
+                title: 'My Orders',
+                orders: formattedOrders,
+                messages: {
+                    success_msg: req.flash('success_msg'),
+                    error_msg: req.flash('error_msg')
+                }
+            });
+        } catch (error) {
+            console.error('Error fetching orders:', error);
+            req.flash('error_msg', 'Error loading orders');
+            res.redirect('/users/profile');
+        }
+    },
+
+    getOrderDetails: async (req, res) => {
+        try {
+            const order = await Order.findOne({
+                _id: req.params.orderId,
+                user: req.user._id
+            })
+            .populate({
+                path: 'items.product',
+                select: 'name images price'
+            })
+            .lean();
+
+            if (!order) {
+                req.flash('error_msg', 'Order not found');
+                return res.redirect('/users/orders');
+            }
+
+            // Format the order data
+            const formattedOrder = {
+                _id: order._id,
+                createdAt: order.createdAt,
+                total: order.total || 0,
+                status: order.status || 'processing',
+                items: order.items || [],
+                shippingAddress: order.shippingAddress || {},
+                subtotal: order.subtotal || 0,
+                shippingFee: order.shippingFee || 0
+            };
+
+            res.render('users/orders/details', {
+                title: `Order #${order._id}`,
+                order: formattedOrder,
+                messages: {
+                    success_msg: req.flash('success_msg'),
+                    error_msg: req.flash('error_msg')
+                }
+            });
+        } catch (error) {
+            console.error('Error fetching order details:', error);
+            req.flash('error_msg', 'Error loading order details');
+            res.redirect('/users/orders');
         }
     }
 };

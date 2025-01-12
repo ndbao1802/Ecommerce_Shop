@@ -3,6 +3,8 @@ const Product = require('../models/productModel');
 const Order = require('../models/orderModel');
 const passport = require('passport');
 const Category = require('../models/categoryModel');
+const bcrypt = require('bcryptjs');
+const { cloudinary } = require('../config/cloudinary');
 
 const adminController = {
     getLogin: (req, res) => {
@@ -252,6 +254,82 @@ const adminController = {
                 success: false,
                 error: 'Error updating user status'
             });
+        }
+    },
+
+    getProfile: async (req, res) => {
+        try {
+            const user = await User.findById(req.user.id).lean();
+            res.render('admin/profile', {
+                layout: 'layouts/adminLayout',
+                user,
+                messages: {
+                    success_msg: req.flash('success_msg'),
+                    error_msg: req.flash('error_msg')
+                }
+            });
+        } catch (error) {
+            console.error('Error loading profile:', error);
+            req.flash('error_msg', 'Error loading profile');
+            res.redirect('/admin/dashboard');
+        }
+    },
+
+    updateProfile: async (req, res) => {
+        try {
+            const { name, email, currentPassword, newPassword, confirmPassword } = req.body;
+            const admin = await User.findById(req.user.id);
+
+            // Update basic info
+            admin.name = name;
+            admin.email = email;
+
+            // Update avatar if uploaded
+            if (req.file) {
+                try {
+                    // Delete old avatar from Cloudinary if exists
+                    if (admin.avatar && admin.avatar.includes('cloudinary')) {
+                        const publicId = admin.avatar.split('/').pop().split('.')[0];
+                        await cloudinary.uploader.destroy(publicId);
+                    }
+                    
+                    // The new avatar URL will be in req.file.path
+                    admin.avatar = req.file.path;
+                    console.log('New avatar path:', req.file.path);
+                } catch (error) {
+                    console.error('Error handling avatar:', error);
+                    req.flash('error_msg', 'Error updating profile picture');
+                    return res.redirect('/admin/profile');
+                }
+            }
+
+            // Handle password change
+            if (currentPassword && newPassword) {
+                if (newPassword !== confirmPassword) {
+                    req.flash('error_msg', 'New passwords do not match');
+                    return res.redirect('/admin/profile');
+                }
+
+                // Verify current password
+                const isMatch = await bcrypt.compare(currentPassword, admin.password);
+                if (!isMatch) {
+                    req.flash('error_msg', 'Current password is incorrect');
+                    return res.redirect('/admin/profile');
+                }
+
+                // Hash new password
+                const salt = await bcrypt.genSalt(10);
+                admin.password = await bcrypt.hash(newPassword, salt);
+            }
+
+            await admin.save();
+            console.log('Profile updated successfully');
+            req.flash('success_msg', 'Profile updated successfully');
+            res.redirect('/admin/profile');
+        } catch (error) {
+            console.error('Profile update error:', error);
+            req.flash('error_msg', 'Error updating profile');
+            res.redirect('/admin/profile');
         }
     }
 };

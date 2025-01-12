@@ -1,0 +1,71 @@
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">My Orders</h5>
+                </div>
+                <div class="card-body">
+                    <% if (!orders || orders.length === 0) { %>
+                        <div class="text-center py-5">
+                            <h4>No orders yet</h4>
+                            <p>You haven't placed any orders yet.</p>
+                            <a href="/products" class="btn btn-primary">Start Shopping</a>
+                        </div>
+                    <% } else { %>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Date</th>
+                                        <th>Total</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% orders.forEach(order => { %>
+                                        <tr>
+                                            <td><%= order._id %></td>
+                                            <td><%= new Date(order.createdAt).toLocaleDateString() %></td>
+                                            <td>$<%= (order.total || 0).toFixed(2) %></td>
+                                            <td>
+                                                <span class="badge bg-<%= 
+                                                    order.status === 'delivered' ? 'success' : 
+                                                    order.status === 'processing' ? 'warning' : 
+                                                    order.status === 'cancelled' ? 'danger' : 'info' 
+                                                %>">
+                                                    <%= (order.status || 'Processing').charAt(0).toUpperCase() + (order.status || 'Processing').slice(1) %>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="/users/orders/<%= order._id %>" class="btn btn-sm btn-info">
+                                                    View Details
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <% }); %>
+                                </tbody>
+                            </table>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <% if(messages.success_msg){ %>
+        <div class="alert alert-success alert-dismissible fade show mt-3">
+            <%= messages.success_msg %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <% } %>
+    
+    <% if(messages.error_msg){ %>
+        <div class="alert alert-danger alert-dismissible fade show mt-3">
+            <%= messages.error_msg %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <% } %>
+</div> 
