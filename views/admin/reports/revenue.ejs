@@ -1,0 +1,84 @@
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Revenue Report</h5>
+                        <div class="btn-group">
+                            <a href="?range=day" class="btn btn-outline-primary <%= range === 'day' ? 'active' : '' %>">Day</a>
+                            <a href="?range=week" class="btn btn-outline-primary <%= range === 'week' ? 'active' : '' %>">Week</a>
+                            <a href="?range=month" class="btn btn-outline-primary <%= range === 'month' ? 'active' : '' %>">Month</a>
+                            <a href="?range=year" class="btn btn-outline-primary <%= range === 'year' ? 'active' : '' %>">Year</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const revenueData = <%- JSON.stringify(revenueData) %>;
+    
+    // Prepare data for Chart.js
+    const labels = revenueData.map(item => 
+        `${item._id.year}-${item._id.month}-${item._id.day}`
+    );
+    const revenues = revenueData.map(item => item.totalRevenue);
+    const orderCounts = revenueData.map(item => item.orderCount);
+    
+    // Create chart
+    new Chart(document.getElementById('revenueChart'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Revenue',
+                data: revenues,
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1,
+                yAxisID: 'y'
+            }, {
+                label: 'Orders',
+                data: orderCounts,
+                borderColor: 'rgb(255, 99, 132)',
+                tension: 0.1,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value;
+                        }
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    beginAtZero: true,
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            }
+        }
+    });
+</script> 

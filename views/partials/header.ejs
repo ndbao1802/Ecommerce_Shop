@@ -25,8 +25,59 @@
     <a class="dropdown-item" href="/users/wishlist">
         <i class="fas fa-heart me-2"></i>Wishlist
     </a>
+    <a class="dropdown-item" href="#" onclick="showPageReportModal(event)">
+        <i class="fas fa-flag me-2"></i>Report Issue
+    </a>
     <div class="dropdown-divider"></div>
     <a class="dropdown-item" href="/users/logout">
         <i class="fas fa-sign-out-alt me-2"></i>Logout
     </a>
 </div> 
+
+<!-- Report Page Button -->
+<% if (user) { %>
+  <button onclick="showPageReportModal(event)" class="btn btn-link text-danger">
+    <i class="bi bi-flag"></i> Report Page
+  </button>
+<% } else { %>
+  <a href="/users/login" class="btn btn-link text-danger">
+    <i class="bi bi-flag"></i> Login to Report
+  </a>
+<% } %>
+
+<!-- Report Modal - Only include if user is logged in -->
+<% if (user) { %>
+<div class="modal fade" id="pageReportModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Report Page</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="/users/report" method="POST" id="pageReportForm">
+        <div class="modal-body">
+          <input type="hidden" name="page" value="">
+          <input type="hidden" name="type" value="page">
+          <div class="mb-3">
+            <label for="pageDescription" class="form-label">What's wrong with this page?</label>
+            <textarea class="form-control" id="pageDescription" name="description" rows="3" required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Submit Report</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<script>
+function showPageReportModal(event) {
+    event.preventDefault();
+    const modal = new bootstrap.Modal(document.getElementById('pageReportModal'));
+    document.querySelector('#pageReportForm input[name="page"]').value = window.location.pathname;
+    modal.show();
+}
+</script> 

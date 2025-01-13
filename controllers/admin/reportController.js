@@ -1,5 +1,6 @@
 const Order = require('../../models/orderModel');
 const Product = require('../../models/productModel');
+const Report = require('../../models/reportModel');
 
 const getDateRange = (range) => {
     const end = new Date();
@@ -52,7 +53,24 @@ const reportController = {
                 { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } }
             ]);
 
-            const topProducts = await Order.aggregate([
+            res.render('admin/reports/revenue', {
+                layout: 'layouts/adminLayout',
+                revenueData,
+                range
+            });
+        } catch (error) {
+            console.error('Error generating revenue report:', error);
+            req.flash('error_msg', 'Error generating report');
+            res.redirect('/admin/dashboard');
+        }
+    },
+
+    getProductReport: async (req, res) => {
+        try {
+            const range = req.query.range || 'month';
+            const { start, end } = getDateRange(range);
+
+            const productData = await Order.aggregate([
                 {
                     $match: {
                         createdAt: { $gte: start, $lte: end },
@@ -71,18 +89,79 @@ const reportController = {
                 { $limit: 10 }
             ]);
 
-            // Populate product details
-            await Product.populate(topProducts, { path: "_id", select: "name" });
+            await Product.populate(productData, { path: "_id", select: "name" });
 
-            res.render('admin/reports/index', {
+            res.render('admin/reports/products', {
                 layout: 'layouts/adminLayout',
-                revenueData,
-                topProducts,
+                productData,
                 range
             });
         } catch (error) {
-            console.error('Error generating report:', error);
+            console.error('Error generating product report:', error);
             req.flash('error_msg', 'Error generating report');
+            res.redirect('/admin/dashboard');
+        }
+    },
+
+    getUserReports: async (req, res) => {
+        try {
+            const reports = await Report.find()
+                .populate('user', 'name email')
+                .populate('product', 'name')
+                .sort('-createdAt')
+                .lean();
+
+            res.render('admin/reports/user-reports', {
+                layout: 'layouts/adminLayout',
+                reports
+            });
+        } catch (error) {
+            console.error('Error fetching user reports:', error);
+            req.flash('error_msg', 'Error loading reports');
+            res.redirect('/admin/dashboard');
+        }
+    },
+
+    updateReport: async (req, res) => {
+        try {
+            const { reportId } = req.params;
+            const { status, adminResponse } = req.body;
+
+            const report = await Report.findById(reportId);
+            if (!report) {
+                return res.status(404).json({ success: false, error: 'Report not found' });
+            }
+
+            report.status = status;
+            report.adminResponse = adminResponse;
+            if (status === 'resolved' || status === 'dismissed') {
+                report.resolvedAt = new Date();
+            }
+
+            await report.save();
+
+            res.json({ success: true });
+        } catch (error) {
+            console.error('Error updating report:', error);
+            res.status(500).json({ success: false, error: 'Error updating report' });
+        }
+    },
+
+    getDashboard: async (req, res) => {
+        try {
+            // Get recent reports
+            const recentReports = await Report.find()
+                .sort('-createdAt')
+                .limit(5)
+                .lean();
+
+            res.render('admin/reports/dashboard', {
+                layout: 'layouts/adminLayout',
+                recentReports
+            });
+        } catch (error) {
+            console.error('Error loading reports dashboard:', error);
+            req.flash('error_msg', 'Error loading dashboard');
             res.redirect('/admin/dashboard');
         }
     }

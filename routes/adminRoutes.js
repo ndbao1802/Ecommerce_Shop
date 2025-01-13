@@ -68,6 +68,10 @@ router.get('/profile', ensureAdmin, adminController.getProfile);
 router.post('/profile', ensureAdmin, uploadAvatar, adminController.updateProfile);
 
 // Reports
-router.get('/reports', ensureAdmin, reportController.getRevenueReport);
+router.get('/reports', ensureAdmin, reportController.getDashboard);
+router.get('/reports/revenue', ensureAdmin, reportController.getRevenueReport);
+router.get('/reports/products', ensureAdmin, reportController.getProductReport);
+router.get('/reports/user', ensureAdmin, reportController.getUserReports);
+router.put('/reports/:reportId', ensureAdmin, reportController.updateReport);
 
 module.exports = router; 

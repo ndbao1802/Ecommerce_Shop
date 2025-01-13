@@ -1,0 +1,128 @@
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">User Reports</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>User</th>
+                                    <th>Type</th>
+                                    <th>Target</th>
+                                    <th>Description</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% reports.forEach(report => { %>
+                                    <tr>
+                                        <td><%= new Date(report.createdAt).toLocaleDateString() %></td>
+                                        <td><%= report.user.name %></td>
+                                        <td><%= report.type.charAt(0).toUpperCase() + report.type.slice(1) %></td>
+                                        <td>
+                                            <% if (report.type === 'product') { %>
+                                                <%= report.product ? report.product.name : 'Deleted Product' %>
+                                            <% } else { %>
+                                                <%= report.page %>
+                                            <% } %>
+                                        </td>
+                                        <td><%= report.description %></td>
+                                        <td>
+                                            <span class="badge bg-<%= 
+                                                report.status === 'resolved' ? 'success' : 
+                                                report.status === 'investigating' ? 'warning' :
+                                                report.status === 'dismissed' ? 'danger' : 'info' 
+                                            %>">
+                                                <%= report.status.charAt(0).toUpperCase() + report.status.slice(1) %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-primary" 
+                                                    onclick="handleReport('<%= report._id %>')">
+                                                Handle
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Handle Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reportForm">
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" name="status" required>
+                            <option value="investigating">Investigating</option>
+                            <option value="resolved">Resolved</option>
+                            <option value="dismissed">Dismissed</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Response</label>
+                        <textarea class="form-control" name="adminResponse" rows="3" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="updateReport()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentReportId = null;
+const modal = new bootstrap.Modal(document.getElementById('reportModal'));
+
+function handleReport(reportId) {
+    currentReportId = reportId;
+    modal.show();
+}
+
+async function updateReport() {
+    try {
+        const form = document.getElementById('reportForm');
+        const formData = new FormData(form);
+        
+        const response = await fetch(`/admin/reports/${currentReportId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(Object.fromEntries(formData))
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error updating report: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error updating report');
+    }
+}
+</script> 

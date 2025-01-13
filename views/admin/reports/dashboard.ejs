@@ -1,0 +1,118 @@
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Reports Dashboard</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Revenue Reports Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Revenue Reports</h5>
+                    <p class="card-text">View detailed revenue analytics and trends.</p>
+                    <a href="/admin/reports/revenue" class="btn btn-primary">
+                        <i class="bi bi-graph-up"></i> View Revenue Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Reports Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Product Reports</h5>
+                    <p class="card-text">Analyze product performance and sales.</p>
+                    <a href="/admin/reports/products" class="btn btn-primary">
+                        <i class="bi bi-box"></i> View Product Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Reports Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">User Reports</h5>
+                    <p class="card-text">Review user-submitted reports and issues.</p>
+                    <a href="/admin/reports/user" class="btn btn-primary">
+                        <i class="bi bi-exclamation-triangle"></i> View User Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Reports Overview -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent User Reports</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% recentReports.forEach(report => { %>
+                                    <tr>
+                                        <td><%= new Date(report.createdAt).toLocaleDateString() %></td>
+                                        <td><%= report.type.charAt(0).toUpperCase() + report.type.slice(1) %></td>
+                                        <td>
+                                            <span class="badge bg-<%= 
+                                                report.status === 'resolved' ? 'success' : 
+                                                report.status === 'investigating' ? 'warning' :
+                                                report.status === 'dismissed' ? 'danger' : 'info' 
+                                            %>">
+                                                <%= report.status.charAt(0).toUpperCase() + report.status.slice(1) %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="/admin/reports/user" class="btn btn-sm btn-primary">View Details</a>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <canvas id="revenueChart"></canvas>
+        </div>
+        <div class="col-md-6">
+            <canvas id="ordersChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+    const revenueChart = new Chart(document.getElementById('revenueChart'), {
+        type: 'line',
+        data: {
+            labels: <%= JSON.stringify(chartData.labels) %>,
+            datasets: [{
+                label: 'Revenue',
+                data: <%= JSON.stringify(chartData.revenue) %>,
+                borderColor: '#4CAF50'
+            }]
+        }
+    });
+    </script>
+</div> 

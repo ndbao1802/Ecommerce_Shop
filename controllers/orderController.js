@@ -1,6 +1,7 @@
 const Order = require('../models/orderModel');
 const User = require('../models/userModel');
 const Product = require('../models/productModel');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const orderController = {
     // Get checkout page
@@ -178,30 +179,36 @@ const orderController = {
     // Process payment
     processPayment: async (req, res) => {
         try {
-            const order = await Order.findById(req.params.orderId);
-            
-            if (!order || order.user.toString() !== req.user._id.toString()) {
-                return res.status(404).json({
-                    success: false,
-                    error: 'Order not found'
-                });
+            const { orderId } = req.params;
+            const order = await Order.findById(orderId);
+
+            if (!order) {
+                return res.status(404).json({ error: 'Order not found' });
             }
 
-            // Update order status
-            order.paymentStatus = 'paid';
-            order.status = 'processing';
-            await order.save();
+            // Create Stripe payment session
+            const session = await stripe.checkout.sessions.create({
+                payment_method_types: ['card'],
+                line_items: order.items.map(item => ({
+                    price_data: {
+                        currency: 'usd',
+                        product_data: {
+                            name: item.product.name,
+                            images: [item.product.images[0]?.url],
+                        },
+                        unit_amount: Math.round(item.price * 100), // Stripe uses cents
+                    },
+                    quantity: item.quantity,
+                })),
+                mode: 'payment',
+                success_url: `${process.env.BASE_URL}/orders/${orderId}/success`,
+                cancel_url: `${process.env.BASE_URL}/orders/${orderId}/cancel`,
+            });
 
-            res.json({
-                success: true,
-                orderId: order._id
-            });
+            res.json({ sessionId: session.id });
         } catch (error) {
-            console.error('Payment processing error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error processing payment'
-            });
+            console.error('Payment error:', error);
+            res.status(500).json({ error: 'Error processing payment' });
         }
     }
 };

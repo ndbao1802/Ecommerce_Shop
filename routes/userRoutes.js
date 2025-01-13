@@ -29,6 +29,10 @@ router.get('/profile', isAuth, userController.getProfile);
 router.post('/profile', isAuth, uploadAvatar, userController.updateProfile);
 router.post('/profile/password', isAuth, userController.updatePassword);
 
+// Report routes
+router.post('/report/product/:productId', isAuth, userController.reportProduct);
+router.post('/report/page', isAuth, userController.reportPage);
+
 // Cart routes
 router.get('/cart', isAuth, userController.getCart);
 router.post('/cart/add', isAuth, userController.addToCart);
@@ -60,5 +64,7 @@ router.get('/forgot-password', (req, res) => {
     res.render('users/forgot-password');
 });
 router.post('/forgot-password', userController.forgotPassword);
+router.get('/reset-password/:token', userController.getResetPassword);
+router.post('/reset-password/:token', userController.postResetPassword);
 
 module.exports = router; 
