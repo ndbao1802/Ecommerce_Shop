@@ -5,154 +5,101 @@ const productController = {
     // Get all products with filters
     getProducts: async (req, res) => {
         try {
-            const page = parseInt(req.query.page) || 1;
-            const limit = parseInt(req.query.limit) || 12;
-            const skip = (page - 1) * limit;
-
+            const { search, category, brand, minPrice, maxPrice, sort } = req.query;
             // Build query
             let query = { isActive: true };
             
             // Search functionality
-            if (req.query.search) {
-                const searchRegex = new RegExp(req.query.search, 'i');
+            if (search) {
+                const searchRegex = new RegExp(search, 'i');
                 query.$or = [
                     { name: searchRegex },
                     { description: searchRegex }
                 ];
             }
 
-            // Category filter - handle multiple categories as AND
-            if (req.query.category) {
-                const categories = Array.isArray(req.query.category) 
-                    ? req.query.category 
-                    : [req.query.category];
-                
-                // If multiple categories are selected, no product can match (since a product can't be in multiple categories)
-                if (categories.length > 1) {
-                    // Get all necessary data for filters
-                    const allCategories = await Category.find();
-                    const allBrands = await Product.distinct('brand');
-                    const highestPriceProduct = await Product.findOne()
-                        .sort({ price: -1 })
-                        .select('price');
-                    const maxPrice = Math.ceil(highestPriceProduct?.price || 1000);
-
-                    // Return empty results but preserve filter state
-                    return res.render('products/index', {
-                        products: [],
-                        categories: allCategories,
-                        brands: allBrands,
-                        filters: {
-                            ...req.query,
-                            category: categories  // Preserve selected categories
-                        },
-                        pagination: {
-                            page: 1,
-                            pages: 0,
-                            total: 0
-                        },
-                        maxPrice
-                    });
-                }
-                
-                // Single category filter
-                query.category = categories[0];
+            // Category filter
+            if (category) {
+                query.category = category;
             }
 
-            // Brand filter - handle multiple brands as AND (no product can have multiple brands)
-            if (req.query.brand) {
-                const brands = Array.isArray(req.query.brand) 
-                    ? req.query.brand 
-                    : [req.query.brand];
-                
-                if (brands.length > 1) {
-                    // Get all necessary data for filters
-                    const categories = await Category.find();
-                    const allBrands = await Product.distinct('brand');
-                    const highestPriceProduct = await Product.findOne()
-                        .sort({ price: -1 })
-                        .select('price');
-                    const maxPrice = Math.ceil(highestPriceProduct?.price || 1000);
-
-                    // Return empty results but preserve filter state
-                    return res.render('products/index', {
-                        products: [],
-                        categories,
-                        brands: allBrands,
-                        filters: {
-                            ...req.query,
-                            brand: brands
-                        },
-                        pagination: {
-                            page: 1,
-                            pages: 0,
-                            total: 0
-                        },
-                        maxPrice
-                    });
-                }
-                
-                query.brand = brands[0];
-            }
-
-            // Price range filter
-            if (req.query.minPrice || req.query.maxPrice) {
+            // Price filter
+            if (minPrice || maxPrice) {
                 query.price = {};
-                if (req.query.minPrice) query.price.$gte = parseFloat(req.query.minPrice);
-                if (req.query.maxPrice) query.price.$lte = parseFloat(req.query.maxPrice);
+                if (minPrice) query.price.$gte = parseFloat(minPrice);
+                if (maxPrice) query.price.$lte = parseFloat(maxPrice);
             }
 
-            // Get max price for filter
-            const highestPriceProduct = await Product.findOne()
-                .sort({ price: -1 })
-                .select('price');
-            const maxPrice = Math.ceil(highestPriceProduct?.price || 1000);
+            // Brand filter
+            if (brand) {
+                query.brand = brand;
+            }
+
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 12;
+            const skip = (page - 1) * limit;
+
+            // Get total count for pagination
+            const total = await Product.countDocuments(query);
+            const pages = Math.ceil(total / limit);
+
+            // Get highest price for price filter
+            const highestPriceProduct = await Product.findOne({ isActive: true })
+                .sort({ price: -1 });
+            const highestPrice = Math.ceil(highestPriceProduct?.price || 1000);
+
+            // Get all categories for filter
+            const categories = await Category.find();
+
+            // Get all unique brands for filter
+            const brands = await Product.distinct('brand', { isActive: true });
+
+            // Apply sorting
+            let sortOption = {};
+            if (sort === 'price-asc') sortOption.price = 1;
+            if (sort === 'price-desc') sortOption.price = -1;
+            if (sort === 'newest') sortOption.createdAt = -1;
+            if (sort === 'popular') sortOption.views = -1;
 
             // Get products
             const products = await Product.find(query)
                 .populate('category')
-                .sort(req.query.sort || '-createdAt')
+                .sort(sortOption)
                 .skip(skip)
                 .limit(limit);
-
-            // Get total count
-            const total = await Product.countDocuments(query);
-
-            // Get categories for filter
-            const categories = await Category.find();
-
-            // Get unique brands for filter
-            const brands = await Product.distinct('brand');
 
             // If AJAX request, return JSON
             if (req.xhr || req.headers.accept.includes('json')) {
                 return res.json({
-                    success: true,
                     products,
                     pagination: {
                         page,
-                        pages: Math.ceil(total / limit),
+                        pages,
                         total
-                    },
-                    filters: {
-                        categories,
-                        brands
                     }
                 });
             }
 
             // Render view for regular request
             res.render('products/index', {
+                title: 'Products',
                 products,
                 categories,
                 brands,
-                filters: req.query,
+                filters: {
+                    search,
+                    category,
+                    brand,
+                    minPrice,
+                    maxPrice,
+                    sort
+                },
+                maxPrice: highestPrice,
                 pagination: {
                     page,
-                    pages: Math.ceil(total / limit),
+                    pages,
                     total
-                },
-                maxPrice
+                }
             });
 
         } catch (error) {
@@ -164,8 +111,7 @@ const productController = {
                 });
             }
             res.status(500).render('error', { 
-                message: 'Error getting products',
-                error: process.env.NODE_ENV === 'development' ? error : {}
+                message: 'Error getting products' 
             });
         }
     },
@@ -234,20 +180,13 @@ const productController = {
     // Create product
     createProduct: async (req, res) => {
         try {
-            const product = new Product(req.body);
-            await product.save();
-
-            res.status(201).json({
-                success: true,
-                product
-            });
-
+            const product = await Product.create(req.body);
+            // Index the product in Elasticsearch
+            await SearchService.indexProduct(product);
+            res.status(201).json(product);
         } catch (error) {
             console.error('Error creating product:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error creating product'
-            });
+            res.status(500).json({ error: 'Error creating product' });
         }
     },
 
@@ -259,25 +198,12 @@ const productController = {
                 req.body,
                 { new: true }
             );
-
-            if (!product) {
-                return res.status(404).json({
-                    success: false,
-                    error: 'Product not found'
-                });
-            }
-
-            res.json({
-                success: true,
-                product
-            });
-
+            // Update the product in Elasticsearch
+            await SearchService.indexProduct(product);
+            res.json(product);
         } catch (error) {
             console.error('Error updating product:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error updating product'
-            });
+            res.status(500).json({ error: 'Error updating product' });
         }
     },
 
@@ -398,27 +324,21 @@ const productController = {
     // Search products
     searchProducts: async (req, res) => {
         try {
-            const searchRegex = new RegExp(req.params.query, 'i');
+            const searchRegex = new RegExp(req.query.q, 'i');
             const products = await Product.find({
                 $or: [
                     { name: searchRegex },
-                    { description: searchRegex },
-                    { brand: searchRegex }
+                    { description: searchRegex }
                 ],
                 isActive: true
-            });
+            })
+            .select('name price images')
+            .limit(10);
 
-            res.json({
-                success: true,
-                products
-            });
-
+            res.json({ products });
         } catch (error) {
-            console.error('Error searching products:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error searching products'
-            });
+            console.error('Search API error:', error);
+            res.status(500).json({ error: 'Error searching products' });
         }
     },
 

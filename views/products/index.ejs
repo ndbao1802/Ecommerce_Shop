@@ -1,19 +1,24 @@
 <%- include('../partials/header') %>
 
 <div class="container py-5">
-    <!-- Add search form before the row -->
+    <!-- Search form -->
     <form action="/products" method="GET" class="mb-4">
         <div class="input-group">
             <input type="text" 
+                   name="search" 
                    class="form-control" 
-                   placeholder="Search products..." 
-                   name="search"
-                   value="<%= filters.search || '' %>">
+                   placeholder="Search products..."
+                   value="<%= filters.search || '' %>"
+                   aria-label="Search products">
             <button class="btn btn-primary" type="submit">
                 <i class="bi bi-search"></i> Search
             </button>
         </div>
     </form>
+
+    <!-- Add instant search results -->
+    <div id="searchResults" class="position-absolute bg-white shadow-sm rounded p-2" style="display: none; z-index: 1000;">
+    </div>
 
     <div class="row">
         <!-- Filters Sidebar -->
@@ -146,5 +151,59 @@
         </div>
     </div>
 </div>
+
+<script>
+const searchInput = document.querySelector('input[name="search"]');
+const searchResults = document.getElementById('searchResults');
+let searchTimeout;
+
+searchInput.addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    const query = this.value.trim();
+
+    if (query.length < 2) {
+        searchResults.style.display = 'none';
+        return;
+    }
+
+    searchTimeout = setTimeout(async () => {
+        try {
+            const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+
+            if (data.products.length > 0) {
+                searchResults.innerHTML = data.products.map(product => `
+                    <div class="search-result-item p-2 border-bottom">
+                        <a href="/products/${product._id}" class="text-decoration-none text-dark">
+                            <div class="d-flex align-items-center">
+                                <img src="${product.images[0]?.url || '/images/default-product.jpg'}" 
+                                     alt="${product.name}" 
+                                     class="me-2" 
+                                     style="width: 40px; height: 40px; object-fit: cover;">
+                                <div>
+                                    <div>${product.name}</div>
+                                    <small class="text-muted">$${product.price}</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                `).join('');
+                searchResults.style.display = 'block';
+            } else {
+                searchResults.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+        }
+    }, 300);
+});
+
+// Hide search results when clicking outside
+document.addEventListener('click', function(e) {
+    if (!searchResults.contains(e.target) && e.target !== searchInput) {
+        searchResults.style.display = 'none';
+    }
+});
+</script>
 
 <%- include('../partials/footer') %> 

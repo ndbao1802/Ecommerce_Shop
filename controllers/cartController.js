@@ -1,4 +1,6 @@
 const Product = require('../models/productModel');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const Order = require('../models/orderModel');
 
 const cartController = {
     getCart: async (req, res) => {
@@ -412,35 +414,29 @@ const cartController = {
 
     renderCheckout: async (req, res) => {
         try {
-            console.log('Rendering checkout page...'); // Debug log
+            // Populate the user's cart with product details
+            await req.user.populate('cart.product');
 
-            // Populate cart items with product details
-            await req.user.populate({
-                path: 'cart.product',
-                select: 'name price images stock'
-            });
+            // Calculate cart totals
+            const cartItems = req.user.cart.map(item => ({
+                product: item.product,
+                quantity: item.quantity,
+                subtotal: item.product.price * item.quantity
+            }));
 
-            // Calculate total
-            const total = req.user.cart.reduce((sum, item) => {
-                return sum + (item.product.price * item.quantity);
-            }, 0);
+            const cartTotal = cartItems.reduce((total, item) => total + item.subtotal, 0);
 
-            // Debug log
-            console.log('Cart data:', {
-                cartItems: req.user.cart.length,
-                addresses: req.user.addresses?.length || 0,
-                total
-            });
-
-            // Render the checkout page
             res.render('cart/checkout', {
                 title: 'Checkout',
-                cart: req.user.cart,
-                addresses: req.user.addresses || [],
-                total: total
+                cart: {
+                    items: cartItems,
+                    total: cartTotal
+                },
+                user: req.user,
+                stripePublicKey: process.env.STRIPE_PUBLISHABLE_KEY
             });
         } catch (error) {
-            console.error('Checkout render error:', error);
+            console.error('Checkout error:', error);
             req.flash('error_msg', 'Error loading checkout page');
             res.redirect('/cart');
         }
@@ -448,14 +444,103 @@ const cartController = {
 
     processCheckout: async (req, res) => {
         try {
-            // Add checkout processing logic here
-            res.json({ success: true, message: 'Order placed successfully' });
+            const { address, paymentMethod } = req.body;
+
+            // Calculate total from cart
+            await req.user.populate('cart.product');
+            const total = req.user.cart.reduce((sum, item) => {
+                return sum + (item.product.price * item.quantity);
+            }, 0);
+
+            // Create order
+            const order = await Order.create({
+                user: req.user._id,
+                items: req.user.cart.map(item => ({
+                    product: item.product._id,
+                    quantity: item.quantity,
+                    price: item.product.price
+                })),
+                shippingAddress: address,
+                total,
+                paymentMethod,
+                paymentStatus: paymentMethod === 'cod' ? 'pending' : 'awaiting_payment',
+                status: 'pending'
+            });
+
+            // Clear cart
+            req.user.cart = [];
+            await req.user.save();
+
+            res.json({ 
+                success: true, 
+                orderId: order._id
+            });
         } catch (error) {
             console.error('Checkout processing error:', error);
             res.status(500).json({
                 success: false,
                 error: 'Error processing checkout'
             });
+        }
+    },
+
+    // Handle successful Stripe payment
+    handlePaymentSuccess: async (req, res) => {
+        try {
+            const { payment_intent } = req.query;
+
+            // Verify the payment
+            const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent);
+
+            if (paymentIntent.status === 'succeeded') {
+                // Update order status
+                const order = await Order.findOne({ 
+                    user: req.user._id,
+                    status: 'pending',
+                    paymentStatus: 'awaiting_payment'
+                }).sort({ createdAt: -1 });
+
+                if (order) {
+                    order.paymentStatus = 'paid';
+                    order.status = 'processing';
+                    await order.save();
+
+                    req.flash('success_msg', 'Payment successful! Your order is being processed.');
+                    res.redirect(`/orders/${order._id}`);
+                } else {
+                    req.flash('error_msg', 'Order not found');
+                    res.redirect('/orders');
+                }
+            } else {
+                req.flash('error_msg', 'Payment verification failed');
+                res.redirect('/cart');
+            }
+        } catch (error) {
+            console.error('Error handling payment success:', error);
+            req.flash('error_msg', 'Error processing payment');
+            res.redirect('/cart');
+        }
+    },
+
+    // Create payment intent for Stripe
+    createPaymentIntent: async (req, res) => {
+        try {
+            const { amount } = req.body;
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount,
+                currency: 'usd',
+                automatic_payment_methods: {
+                    enabled: true,
+                },
+            });
+
+            res.json({
+                clientSecret: paymentIntent.client_secret
+            });
+        } catch (error) {
+            console.error('Error creating payment intent:', error);
+            res.status(500).json({ error: 'Error creating payment' });
         }
     }
 };

@@ -6,6 +6,8 @@ const { isAuth } = require('../middleware/auth');
 // Checkout routes
 router.get('/checkout', isAuth, orderController.getCheckout);
 router.post('/create', isAuth, orderController.createOrder);
+router.post('/create-payment-intent', isAuth, orderController.createPaymentIntent);
+router.get('/payment-success', isAuth, orderController.handlePaymentSuccess);
 
 // Order list and details
 router.get('/', isAuth, orderController.getOrders);

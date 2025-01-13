@@ -22,81 +22,58 @@ const orderController = {
     // Create new order
     createOrder: async (req, res) => {
         try {
-            const { address, paymentMethod } = req.body;
-            console.log('Received order data:', { address, paymentMethod }); // Debug log
+            const { shippingAddress, paymentMethod } = req.body;
+            const user = await User.findById(req.user._id).populate('cart.product');
 
-            // Validate required fields
-            if (!address || !paymentMethod) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Missing required fields'
-                });
-            }
-
-            // Populate cart items
-            await req.user.populate('cart.product');
-
-            // Validate cart is not empty
-            if (!req.user.cart.length) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Cart is empty'
-                });
-            }
-
-            // Create order items from cart
-            const orderItems = req.user.cart.map(item => ({
-                product: item.product._id,
-                quantity: item.quantity,
-                price: item.product.price
-            }));
-
-            // Calculate total
-            const totalAmount = req.user.cart.reduce((sum, item) => {
-                return sum + (item.product.price * item.quantity);
+            // Calculate totals
+            const subtotal = user.cart.reduce((total, item) => {
+                return total + (item.product.price * item.quantity);
             }, 0);
+            const shippingFee = 10; // Fixed shipping fee
+            const total = subtotal + shippingFee;
 
-            // Create new order
-            const order = new Order({
+            // Create order
+            const order = await Order.create({
                 user: req.user._id,
-                items: orderItems,
-                totalAmount: totalAmount,
-                shippingAddress: {
-                    street: address.street,
-                    ward: address.ward,
-                    district: address.district,
-                    city: address.city
-                },
-                paymentMethod: paymentMethod,
-                paymentStatus: 'pending',
-                status: 'processing'
+                items: user.cart.map(item => ({
+                    product: item.product._id,
+                    quantity: item.quantity,
+                    price: item.product.price
+                })),
+                shippingAddress,
+                subtotal,
+                shippingFee,
+                total,
+                paymentMethod,
+                paymentStatus: paymentMethod === 'cod' ? 'pending' : 'awaiting_payment',
+                status: 'pending'
             });
 
-            console.log('Created order:', order); // Debug log
+            // Clear cart
+            user.cart = [];
+            await user.save();
 
-            await order.save();
-
-            // Update product stock
-            for (const item of req.user.cart) {
-                await Product.findByIdAndUpdate(item.product._id, {
-                    $inc: { stock: -item.quantity }
+            if (paymentMethod === 'card') {
+                // Redirect to payment page for Stripe
+                res.json({ 
+                    success: true, 
+                    orderId: order._id,
+                    requiresPayment: true
+                });
+            } else {
+                // Redirect to order confirmation for COD
+                req.flash('success_msg', 'Order placed successfully');
+                res.json({ 
+                    success: true, 
+                    orderId: order._id,
+                    requiresPayment: false
                 });
             }
-
-            // Clear user's cart
-            req.user.cart = [];
-            await req.user.save();
-
-            res.json({
-                success: true,
-                orderId: order._id
-            });
-
         } catch (error) {
-            console.error('Order creation error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Error creating order'
+            console.error('Error creating order:', error);
+            res.status(500).json({ 
+                success: false, 
+                error: 'Error creating order' 
             });
         }
     },
@@ -209,6 +186,66 @@ const orderController = {
         } catch (error) {
             console.error('Payment error:', error);
             res.status(500).json({ error: 'Error processing payment' });
+        }
+    },
+
+    // Create Stripe Payment Intent
+    createPaymentIntent: async (req, res) => {
+        try {
+            const { amount } = req.body;
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount,
+                currency: 'usd',
+                automatic_payment_methods: {
+                    enabled: true,
+                },
+            });
+
+            res.json({
+                clientSecret: paymentIntent.client_secret
+            });
+        } catch (error) {
+            console.error('Error creating payment intent:', error);
+            res.status(500).json({ error: 'Error creating payment' });
+        }
+    },
+
+    // Handle successful payment
+    handlePaymentSuccess: async (req, res) => {
+        try {
+            const { payment_intent, payment_intent_client_secret } = req.query;
+
+            // Verify the payment
+            const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent);
+
+            if (paymentIntent.status === 'succeeded') {
+                // Update order status
+                const order = await Order.findOne({ 
+                    user: req.user._id,
+                    status: 'pending',
+                    paymentStatus: 'awaiting_payment'
+                }).sort({ createdAt: -1 });
+
+                if (order) {
+                    order.paymentStatus = 'paid';
+                    order.status = 'processing';
+                    await order.save();
+
+                    req.flash('success_msg', 'Payment successful! Your order is being processed.');
+                    res.redirect(`/orders/${order._id}`);
+                } else {
+                    req.flash('error_msg', 'Order not found');
+                    res.redirect('/orders');
+                }
+            } else {
+                req.flash('error_msg', 'Payment verification failed');
+                res.redirect('/cart');
+            }
+        } catch (error) {
+            console.error('Error handling payment success:', error);
+            req.flash('error_msg', 'Error processing payment');
+            res.redirect('/cart');
         }
     }
 };

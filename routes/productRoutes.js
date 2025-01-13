@@ -26,4 +26,7 @@ router.get('/search/:query', productController.searchProducts);
 router.get('/brand/:brand', productController.getProductsByBrand);
 router.get('/price/:min/:max', productController.getProductsByPriceRange);
 
+// API routes
+router.get('/api/products/search', productController.searchProducts);
+
 module.exports = router; 
